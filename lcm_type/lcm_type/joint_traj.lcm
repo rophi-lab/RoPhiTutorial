@@ -1,0 +1,11 @@
+package joint;
+
+struct joint_traj_t
+{
+    double timestamp;
+    int32_t num_joints;
+    int32_t num_points;
+    float t[num_points];
+    float q[num_points][num_joints];
+    float qd[num_points][num_joints];
+}

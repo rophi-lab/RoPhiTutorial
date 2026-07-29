@@ -1,0 +1,15 @@
+package joint;
+
+
+
+struct joint_ctrl_t
+{
+    double timestamp;
+    int32_t num_joints; 
+    float q_des[num_joints];
+    float qd_des[num_joints];
+    float tau_ff[num_joints];
+    float kp[num_joints];
+    float kd[num_joints];
+    boolean valid;
+}

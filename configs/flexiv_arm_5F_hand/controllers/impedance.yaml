@@ -1,0 +1,112 @@
+name: impedance
+ctrl_freq: 1000
+env_mode: sim_real_time
+
+urdf_path: assets/scene/flexiv_arm/urdf/Rizon4_viser.urdf
+mesh_path:
+  path_1: assets/scene/flexiv_arm
+  path_2: assets/scene/flexiv_arm/Rizon4
+  path_3: assets/scene/flexiv_arm/robotis5f
+
+num_joints: 27
+num_arm_joints: 7
+task_frame: palm
+mode: joint  # start in joint impedance; press `t` for SE(3) task
+
+# Nominal configuration (task nominal = FK(task_frame, default_q)).
+default_q: [
+  -0.4363323, -0.6981317, 0.6108652, 1.7453293, 0.8726646, 0.5235988, 1.0471976,
+  -1.0, -1.5, 1.0, 0.5,
+  -0.15, 1.2, 0.7, 0.5,
+  0.0, 1.2, 0.8, 0.5,
+  0.0, 1.2, 0.9, 0.5,
+  0.0, 1.2, 1.0, 0.5,
+]
+
+# Joint-space impedance: τ += Kq (q_nom − q) − Dq q̇  (plus gravity).
+# Critically damped (same recipe as min_jerk_p2p):
+#   kq_i = dq_i^2 / (4 * mean_mass_matrix_diag_i)
+# Fingers stay at 0 here — soft plant PD is kp_hand / kd_hand below.
+mean_mass_matrix_diag: [
+  2.0853, 2.1752, 1.4099, 1.3627, 0.0767, 0.0990, 0.0025,
+  0.002521, 0.002708, 0.002486, 0.002426,
+  0.002943, 0.002683, 0.002486, 0.002426,
+  0.002945, 0.002684, 0.002486, 0.002426,
+  0.002944, 0.002683, 0.002486, 0.002426,
+  0.002944, 0.002683, 0.002486, 0.002426,
+]
+dq: [
+  20, 20, 15, 15, 5, 5, 0.2,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+]
+kq: [
+  48.0, 46.0, 39.9, 41.3, 81.5, 63.1, 4.0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+]
+kq_scale: 1.0
+dq_scale: 1.0
+
+# SE(3) task impedance at palm (body frame, Pinocchio LOCAL):
+#   ξ = log(T^{-1} T_nom)^∨ ∈ ℝ⁶  (ν, ω)
+#   F = K ξ − D V_b,  τ = J_b^⊤ F
+# K = diag(kt_trans I₃, kt_rot I₃), same pattern for D.
+kt_trans: 200.0
+kt_rot: 5.0
+dt_trans: 30.0
+dt_rot: 0.8
+kt_trans_scale: 1.0
+kt_rot_scale: 1.0
+dt_trans_scale: 1.0
+dt_rot_scale: 1.0
+
+# Soft plant PD keeps fingers open at default_q while arm floats in impedance.
+# Critically damped vs mean_mass_matrix_diag for the 20 finger joints:
+#   kp_hand_i = kd_hand_i^2 / (4 * m_i),  kd_hand = 0.05 (same as min_jerk).
+kp_hand: [
+  0.2479, 0.2308, 0.2514, 0.2576,
+  0.2124, 0.2329, 0.2514, 0.2576,
+  0.2122, 0.2329, 0.2514, 0.2576,
+  0.2123, 0.2329, 0.2514, 0.2576,
+  0.2123, 0.2329, 0.2514, 0.2576,
+]
+kd_hand: [
+  0.05, 0.05, 0.05, 0.05,
+  0.05, 0.05, 0.05, 0.05,
+  0.05, 0.05, 0.05, 0.05,
+  0.05, 0.05, 0.05, 0.05,
+  0.05, 0.05, 0.05, 0.05,
+]
+
+do_grav_comp: true
+status_publish_stride: 20
+
+dict_joints:
+  arm:
+    joint_meas_channel: sw_flexiv_arm_joint_meas
+    list_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+  hand:
+    joint_meas_channel: sw_robotis_5F_hand_joint_meas
+    list_joint_idx: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                     17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+
+sub_manager:
+  name: arm_hand_joint
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  gains_cmd_channel: sw_imp_gains_cmd
+  num_arm_joints: 7
+  num_hand_joints: 20
+  num_joints: 27
+
+pub_manager:
+  name: joint_ctrl_imp
+  ctrl_channel: sw_flexiv_arm_hand_joint_ctrl
+  status_channel: sw_imp_status

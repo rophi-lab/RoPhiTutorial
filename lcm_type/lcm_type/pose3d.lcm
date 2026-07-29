@@ -1,0 +1,9 @@
+package pose;
+
+struct pose3d_t
+{
+    float timestamp;
+    float position[3];
+    float velocity[3];
+    float tip[3];
+}

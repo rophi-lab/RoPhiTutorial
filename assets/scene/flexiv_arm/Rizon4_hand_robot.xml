@@ -1,0 +1,253 @@
+<mujoco model="Rizon4">
+  <compiler angle="radian" />
+
+  <default class="main">
+    <joint armature="0"/>
+    <default class="XM335">
+      <joint armature="0.002418" damping="0.01" frictionloss="0.02"/>
+    </default>
+    <!-- Collision geoms: density=0 because each body already has an <inertial>. -->
+    <default class="contact">
+      <geom conaffinity="1" contype="1" condim="6" priority="1" density="0" group="0"
+            friction="1.0 0.02 0.0001" solimp="0.95 0.99 0.001 0.5 2" solref="0.005 1"/>
+    </default>
+    <!-- Visual-only geoms (no collision). -->
+    <default class="no_contact">
+      <geom conaffinity="0" contype="0" priority="0" density="0" group="1"/>
+    </default>
+  </default>
+
+  <asset>
+    <mesh name="link0" file="Rizon4/visual/link0.obj" />
+    <mesh name="link1" file="Rizon4/visual/link1.obj" />
+    <mesh name="ring" file="Rizon4/visual/ring.obj" scale="0.062 0.062 0.002" />
+    <mesh name="link2" file="Rizon4/visual/link2.obj" />
+    <mesh name="link3" file="Rizon4/visual/link3.obj" />
+    <mesh name="ring1" content_type="model/obj" file="Rizon4/visual/ring.obj" scale="0.051 0.051 0.002" />
+    <mesh name="link4" file="Rizon4/visual/link4.obj" />
+    <mesh name="link5" file="Rizon4/visual/link5.obj" />
+    <mesh name="link6" file="Rizon4/visual/link6.obj" />
+    <mesh name="link7" file="Rizon4/visual/link7.obj" />
+    <mesh name="robotis_hand_mount" file="Rizon4/visual/robotis_hand_mount.STL" scale="0.001 0.001 0.001" />
+    <mesh name="enclosure_decimated" file="Rizon4/visual/enclosure_decimated.STL" scale="0.001 0.001 0.001" />
+    <mesh name="rh_5_base_unit" file="robotis5f/meshes/rh_5_right/rh_5_base_unit.stl" scale="0.001 0.001 0.001" />
+    <mesh name="rh_5_thumb_mcp" file="robotis5f/meshes/rh_5_right/rh_5_thumb_mcp.stl" scale="0.001 0.001 0.001" />
+    <mesh name="rh_5_thumb_mcp2" file="robotis5f/meshes/rh_5_right/rh_5_thumb_mcp2.stl" scale="0.001 0.001 0.001" />
+    <mesh name="rh_5_thumb_ip" file="robotis5f/meshes/rh_5_right/rh_5_thumb_ip.stl" scale="0.001 0.001 0.001" />
+    <mesh name="rh_5_thumb_tip" file="robotis5f/meshes/rh_5_right/rh_5_thumb_tip.stl" scale="0.001 0.001 0.001" />
+    <mesh name="rh_5_finger_mcp" file="robotis5f/meshes/rh_5_right/rh_5_finger_mcp.stl" scale="0.001 0.001 0.001" />
+    <mesh name="rh_5_finger_pip" file="robotis5f/meshes/rh_5_right/rh_5_finger_pip.stl" scale="0.001 0.001 0.001" />
+    <mesh name="rh_5_finger_dip" file="robotis5f/meshes/rh_5_right/rh_5_finger_dip.stl" scale="0.001 0.001 0.001" />
+    <mesh name="rh_5_finger_tip" file="robotis5f/meshes/rh_5_right/rh_5_finger_tip.stl" scale="0.001 0.001 0.001" />
+  </asset>
+
+  <worldbody>
+    <body name="base_link">
+      <inertial pos="0 -0.0008 0.0883" quat="0.70706 0.00812177 -0.00812177 0.70706" mass="3.863" diaginertia="0.0190046 0.0188 0.0102954" />
+      <geom class="no_contact" name="shell" type="mesh" mesh="link0" />
+      <geom class="contact" name="convex_mesh" type="mesh" mesh="link0" />
+      <body name="link1" pos="0 0 0.155" quat="0 0 0 1">
+        <inertial pos="0.0002 0.004 0.1451" quat="0.997437 0.0257883 0.00388379 -0.0666253" mass="3.85" diaginertia="0.0308011 0.0307617 0.00763713" />
+        <joint name="joint1" pos="0 0 0" axis="0 0 1" range="-2.8798 2.8798" actuatorfrcrange="-123 123" damping="1.0" frictionloss="0.5"/>
+        <geom class="no_contact" type="mesh" mesh="link1" />
+        <geom class="no_contact" name="ring" pos="0 0 -0.0025" quat="1 0 0 0" type="mesh" mesh="ring" />
+        <geom class="contact" type="mesh" mesh="link1" />
+        <body name="link2" pos="0 0.03 0.21">
+          <inertial pos="0 0.0356 0.0946" quat="0.706902 -0.00321505 -5.75059e-05 0.707304" mass="2.904" diaginertia="0.0263004 0.0255005 0.00389909" />
+          <joint name="joint2" pos="0 0 0" axis="0 1 0" range="-2.3562 2.3562" actuatorfrcrange="-123 123" damping="1.0" frictionloss="0.5"/>
+          <geom class="no_contact" type="mesh" mesh="link2" />
+          <geom class="no_contact" pos="0 -0.0025 0" quat="0.707107 0.707107 0 0" type="mesh" mesh="ring" />
+          <geom class="contact" type="mesh" mesh="link2" />
+          <body name="link3" pos="0 0.035 0.205">
+            <inertial pos="-0.0123 -0.0021 0.1368" quat="0.989402 -0.0195317 0.0719694 0.124588" mass="2.381" diaginertia="0.0146559 0.0138871 0.00365703" />
+            <joint name="joint3" pos="0 0 0" axis="0 0 1" range="-3.0543 3.0543" actuatorfrcrange="-64 64" damping="0.5" frictionloss="0.3"/>
+            <geom class="no_contact" type="mesh" mesh="link3" />
+            <geom class="no_contact" pos="0 0 -0.0025" quat="1 0 0 0" type="mesh" mesh="ring1" />
+            <geom class="contact" type="mesh" mesh="link3" />
+            <body name="link4" pos="-0.02 -0.03 0.19" quat="0 0 0 1">
+              <inertial pos="-0.0129 0.0309 0.1047" quat="0.849541 -0.00479186 0.0620078 0.523843" mass="2.381" diaginertia="0.0189988 0.0184514 0.0026498" />
+              <joint name="joint4" pos="0 0 0" axis="0 1 0" range="-1.9548 2.7751" actuatorfrcrange="-64 64" damping="0.5" frictionloss="0.3"/>
+              <geom class="no_contact" type="mesh" mesh="link4" />
+              <geom class="no_contact" pos="0 -0.0025 0" quat="0.707107 0.707107 0 0" type="mesh" mesh="ring1" />
+              <geom class="contact" type="mesh" mesh="link4" />
+              <body name="link5" pos="-0.02 0.025 0.195" quat="0 0 0 1">
+                <inertial pos="0.0003 0.0024 0.1365" quat="0.999554 0.0298528 0 0" mass="2.336" diaginertia="0.0144 0.0136359 0.00356413" />
+                <joint name="joint5" pos="0 0 0" axis="0 0 1" range="-3.0543 3.0543" actuatorfrcrange="-39 39" damping="0.5" frictionloss="0.2"/>
+                <geom class="no_contact" type="mesh" mesh="link5" />
+                <geom class="no_contact" pos="0 0 -0.0025" quat="1 0 0 0" type="mesh" mesh="ring1" />
+                <geom class="contact" type="mesh" mesh="link5" />
+                <body name="link6" pos="0 0.03 0.19">
+                  <inertial pos="0.0193 0.0595 0.0726" quat="0.86397 0.08091 -0.156613 0.47168" mass="2.251" diaginertia="0.00994711 0.00825338 0.00329951" />
+                  <joint name="joint6" pos="0 0 0" axis="0 1 0" range="-1.4835 4.6251" actuatorfrcrange="-39 39" damping="0.5" frictionloss="0.2"/>
+                  <geom class="no_contact" type="mesh" mesh="link6" />
+                  <geom class="no_contact" pos="0 -0.0025 0" quat="0.707107 0.707107 0 0" type="mesh" mesh="ring1" />
+                  <geom class="contact" type="mesh" mesh="link6" />
+                  <body name="link7" pos="-0.015 0.073 0.11" quat="0.707107 0 -0.707107 0">
+                    <inertial pos="0.0003 0.0008 0.025" mass="0.774" diaginertia="0.001 0.001 0.0009" />
+                    <joint name="joint7" pos="0 0 0" axis="0 0 1" range="-3.0543 3.0543" actuatorfrcrange="-39 39" damping="0.5" frictionloss="0.2"/>
+                    <geom class="no_contact" type="mesh" mesh="link7" />
+                    <geom class="no_contact" pos="0 0 -0.0025" quat="1 0 0 0" type="mesh" mesh="ring1" />
+                    <geom class="contact" type="mesh" mesh="link7" />
+                    <body name="flange" pos="0 0 0.081" quat="0 0 0 1">
+                      <body name="hand_mount" pos="0.0315 0.0554 0" quat="4.63268e-05 0 0 1">
+                        <inertial pos="0.0315 0.0554 0.012" quat="0.5 0.5 -0.5 0.5" mass="0.15" diaginertia="9.61e-05 5.53e-05 5.53e-05" />
+                        <geom class="no_contact" name="mount" type="mesh" mesh="robotis_hand_mount" />
+                        <geom class="contact" type="mesh" mesh="robotis_hand_mount" />
+                        <body name="palm" pos="0.0313 0.0555 0.017">
+                          <inertial pos="-0.00167319 0.00129089 0.0608552" quat="0.991305 -0.131278 0.00848669 -0.00274655" mass="0.353062" diaginertia="0.000593808 0.000390608 0.000310076" />
+                          <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_base_unit" />
+                          <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_base_unit" />
+                          <body name="palm_surface" pos="0.02 0 0.08" quat="0.499998 0.5 0.500002 0.5">
+                            <inertial pos="0 0 0" mass="0.0001" diaginertia="1e-09 1e-09 1e-09" />
+                          </body>
+                          <body name="finger_r_link_1_thumb1" pos="0.0145 0.02624 0.05394" quat="0.965926 -0.258819 0 0">
+                            <inertial pos="0.000269592 0.0140253 -0.000359116" quat="0.623384 0.693912 -0.337352 0.126779" mass="0.0117606" diaginertia="1.32265e-06 1.29401e-06 1.02793e-06" />
+                            <joint name="a08_finger_r_joint_1_thumb1" pos="0 0 0" axis="0 0 1" range="-2.3 0" actuatorfrcrange="-1000 1000" class="XM335" />
+                            <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_thumb_mcp" />
+                            <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_thumb_mcp" />
+                            <body name="finger_r_link_1_thumb2" pos="0 0.028 0" quat="0.965926 0.258819 0 0">
+                              <inertial pos="-4.08413e-05 0.0134296 0.0122789" quat="0.996529 -0.0828349 0.000887604 -0.00820158" mass="0.0722343" diaginertia="2.02755e-05 1.79887e-05 7.70531e-06" />
+                              <joint name="a09_finger_r_joint_1_thumb2" pos="0 0 0" axis="1 0 0" range="-2.1 0.1" actuatorfrcrange="-1000 1000" class="XM335" />
+                              <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_thumb_mcp2" />
+                              <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_thumb_mcp2" />
+                              <body name="finger_r_link_1_thumb3" pos="0 0.0145 0.035">
+                                <inertial pos="0.00100635 -0.000773491 0.0240656" quat="0.973415 -0.0767773 -0.126267 -0.175002" mass="0.0346841" diaginertia="5.80078e-06 5.22247e-06 1.87338e-06" />
+                                <joint name="a10_finger_r_joint_1_thumb3" pos="0 0 0" axis="0 1 0" range="-1.57 1.57" actuatorfrcrange="-1000 1000" class="XM335" />
+                                <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_thumb_ip" />
+                                <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_thumb_ip" />
+                                <body name="finger_r_link_1_thumb4" pos="0 0 0.0355">
+                                  <inertial pos="0.00475256 -0.00171744 0.0176999" quat="0.961388 -0.0809307 -0.196867 -0.174434" mass="0.0136363" diaginertia="3.8216e-06 2.90941e-06 1.31327e-06" />
+                                  <joint name="a11_finger_r_joint_1_thumb4" pos="0 0 0" axis="0 1 0" range="-1.57 1.57" actuatorfrcrange="-1000 1000" class="XM335" />
+                                  <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_thumb_tip" />
+                                  <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_thumb_tip" />
+                                  <body name="thumb_tip" pos="0 0 0.02425">
+                                    <inertial pos="0 0 0" mass="1e-06" diaginertia="1e-06 1e-06 1e-06" />
+                                  </body>
+                                </body>
+                              </body>
+                            </body>
+                          </body>
+                          <body name="finger_r_link_2_index1" pos="-0.0015 0.03608 0.09575">
+                            <inertial pos="0.00522151 -0.000196496 0.0210803" quat="0.595841 0.387495 0.455439 0.536094" mass="0.0388044" diaginertia="5.85681e-06 4.78933e-06 3.47307e-06" />
+                            <joint name="a12_finger_r_joint_2_index1" pos="0 0 0" axis="1 0 0" range="-1.57 0.2" actuatorfrcrange="-1000 1000" class="XM335" />
+                            <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_mcp" />
+                            <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_mcp" />
+                            <body name="finger_r_link_2_index2" pos="0.0165 0 0.0235">
+                              <inertial pos="0.000451802 -0.000132616 0.0241095" quat="0.998178 -0.0138036 -0.0569195 -0.0145315" mass="0.0346888" diaginertia="5.52467e-06 5.11101e-06 2.20563e-06" />
+                              <joint name="a13_finger_r_joint_2_index2" pos="0 0 0" axis="0 1 0" range="0 2.3" actuatorfrcrange="-1000 1000" class="XM335" />
+                              <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_pip" />
+                              <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_pip" />
+                              <body name="finger_r_link_2_index3" pos="0 0 0.0355">
+                                <inertial pos="0.0013232 -7.42605e-05 0.0240873" quat="0.98926 -0.00395269 -0.145801 -0.0095928" mass="0.0346854" diaginertia="5.85327e-06 5.09364e-06 1.8654e-06" />
+                                <joint name="a14_finger_r_joint_2_index3" pos="0 0 0" axis="0 1 0" range="-1.57 1.57" actuatorfrcrange="-1000 1000" class="XM335" />
+                                <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_dip" />
+                                <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_dip" />
+                                <body name="finger_r_link_2_index4" pos="0 0 0.0355">
+                                  <inertial pos="0.00581121 0.000571699 0.0176848" quat="0.975316 0.0144463 -0.216816 0.0392593" mass="0.0136366" diaginertia="2.60835e-06 2.60835e-06 2.60835e-06" />
+                                  <joint name="a15_finger_r_joint_2_index4" pos="0 0 0" axis="0 1 0" range="-1.57 1.57" actuatorfrcrange="-1000 1000" class="XM335" />
+                                  <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_tip" />
+                                  <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_tip" />
+                                  <body name="index_tip" pos="0 0 0.02425">
+                                    <inertial pos="0 0 0" mass="1e-06" diaginertia="1e-06 1e-06 1e-06" />
+                                  </body>
+                                </body>
+                              </body>
+                            </body>
+                          </body>
+                          <body name="finger_r_link_3_middle1" pos="-0.0015 0.00908 0.10353">
+                            <inertial pos="0.00521505 0.000327537 0.0210891" quat="0.517143 0.481561 0.349055 0.615486" mass="0.0388044" diaginertia="5.89418e-06 4.74987e-06 3.44601e-06" />
+                            <joint name="a16_finger_r_joint_3_middle1" pos="0 0 0" axis="1 0 0" range="-0.9 0.7" actuatorfrcrange="-1000 1000" class="XM335" />
+                            <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_mcp" />
+                            <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_mcp" />
+                            <body name="finger_r_link_3_middle2" pos="0.0165 0 0.0235">
+                              <inertial pos="0.000387558 0.000554012 0.0241074" quat="0.99175 0.0762675 -0.0539474 0.0877785" mass="0.0346887" diaginertia="5.51577e-06 5.1839e-06 2.13216e-06" />
+                              <joint name="a17_finger_r_joint_3_middle2" pos="0 0 0" axis="0 1 0" range="0 2.3" actuatorfrcrange="-1000 1000" class="XM335" />
+                              <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_pip" />
+                              <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_pip" />
+                              <body name="finger_r_link_3_middle3" pos="0 0 0.0355">
+                                <inertial pos="0.00122882 0.000587378 0.0241047" quat="0.979458 0.0572934 -0.143231 0.129864" mass="0.0346848" diaginertia="5.81393e-06 5.10678e-06 1.82764e-06" />
+                                <joint name="a18_finger_r_joint_3_middle3" pos="0 0 0" axis="0 1 0" range="-1.57 1.57" actuatorfrcrange="-1000 1000" class="XM335" />
+                                <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_dip" />
+                                <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_dip" />
+                                <body name="finger_r_link_3_middle4" pos="0 0 0.0355">
+                                  <inertial pos="0.00430473 0.00158424 0.0179517" quat="0.964761 0.0741043 -0.196003 0.159148" mass="0.0136368" diaginertia="3.64165e-06 2.8435e-06 1.43655e-06" />
+                                  <joint name="a19_finger_r_joint_3_middle4" pos="0 0 0" axis="0 1 0" range="-1.57 1.57" actuatorfrcrange="-1000 1000" class="XM335" />
+                                  <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_tip" />
+                                  <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_tip" />
+                                  <body name="middle_tip" pos="0 0 0.02425">
+                                    <inertial pos="0 0 0" mass="1e-06" diaginertia="1e-06 1e-06 1e-06" />
+                                  </body>
+                                </body>
+                              </body>
+                            </body>
+                          </body>
+                          <body name="finger_r_link_4_ring1" pos="-0.0015 -0.01792 0.09775">
+                            <inertial pos="0.00520921 -3.75425e-06 0.0210959" quat="0.565393 0.428012 0.420058 0.566293" mass="0.0388044" diaginertia="5.81815e-06 4.81373e-06 3.4492e-06" />
+                            <joint name="a20_finger_r_joint_4_ring1" pos="0 0 0" axis="1 0 0" range="-0.4 1.3" actuatorfrcrange="-1000 1000" class="XM335" />
+                            <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_mcp" />
+                            <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_mcp" />
+                            <body name="finger_r_link_4_ring2" pos="0.0165 0 0.0235">
+                              <inertial pos="0.000578574 0.000120154 0.0241325" quat="0.996798 0.0196135 -0.0732115 0.0254959" mass="0.0346889" diaginertia="5.51488e-06 5.06991e-06 2.17046e-06" />
+                              <joint name="a21_finger_r_joint_4_ring2" pos="0 0 0" axis="0 1 0" range="0 2.3" actuatorfrcrange="-1000 1000" class="XM335" />
+                              <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_pip" />
+                              <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_pip" />
+                              <body name="finger_r_link_4_ring3" pos="0 0 0.0355">
+                                <inertial pos="0.00115165 0.000273571 0.0241007" quat="0.988691 0.0303079 -0.132761 0.0628133" mass="0.0346863" diaginertia="5.76419e-06 5.09479e-06 1.9321e-06" />
+                                <joint name="a22_finger_r_joint_4_ring3" pos="0 0 0" axis="0 1 0" range="-1.57 1.57" actuatorfrcrange="-1000 1000" class="XM335" />
+                                <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_dip" />
+                                <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_dip" />
+                                <body name="finger_r_link_4_ring4" pos="0 0 0.0355">
+                                  <inertial pos="0.00510902 0.00118879 0.0175826" quat="0.973855 0.0424634 -0.199237 0.100542" mass="0.0136368" diaginertia="3.88318e-06 2.91467e-06 1.3049e-06" />
+                                  <joint name="a23_finger_r_joint_4_ring4" pos="0 0 0" axis="0 1 0" range="-1.57 1.57" actuatorfrcrange="-1000 1000" class="XM335" />
+                                  <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_tip" />
+                                  <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_tip" />
+                                  <body name="ring_tip" pos="0 0 0.02425">
+                                    <inertial pos="0 0 0" mass="1e-06" diaginertia="1e-06 1e-06 1e-06" />
+                                  </body>
+                                </body>
+                              </body>
+                            </body>
+                          </body>
+                          <body name="finger_r_link_5_little1" pos="-0.0015 -0.04492 0.07875">
+                            <inertial pos="0.00515817 -0.000606494 0.0211584" quat="0.648749 0.299314 0.50967 0.479345" mass="0.0388044" diaginertia="5.9282e-06 4.65742e-06 3.30314e-06" />
+                            <joint name="a24_finger_r_joint_5_little1" pos="0 0 0" axis="1 0 0" range="-0.2 1.9" actuatorfrcrange="-1000 1000" class="XM335" />
+                            <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_mcp" />
+                            <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_mcp" />
+                            <body name="finger_r_link_5_little2" pos="0.0165 0 0.0235">
+                              <inertial pos="-6.90493e-06 -0.000669786 0.02414" quat="0.995876 -0.0905813 0.00193733 0.00481992" mass="0.0346901" diaginertia="5.41506e-06 5.16225e-06 2.14459e-06" />
+                              <joint name="a25_finger_r_joint_5_little2" pos="0 0 0" axis="0 1 0" range="0 2.3" actuatorfrcrange="-1000 1000" class="XM335" />
+                              <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_pip" />
+                              <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_pip" />
+                              <body name="finger_r_link_5_little3" pos="0 0 0.0355">
+                                <inertial pos="0.00054858 -0.000652177 0.0240989" quat="0.987433 -0.0755563 -0.0747583 -0.116959" mass="0.0346885" diaginertia="5.5664e-06 5.19114e-06 2.08416e-06" />
+                                <joint name="a26_finger_r_joint_5_little3" pos="0 0 0" axis="0 1 0" range="-1.57 1.57" actuatorfrcrange="-1000 1000" class="XM335" />
+                                <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_dip" />
+                                <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_dip" />
+                                <body name="finger_r_link_5_little4" pos="0 0 0.0355">
+                                  <inertial pos="0.00330172 -0.000917113 0.0175374" quat="0.980278 -0.0673326 -0.138021 -0.124382" mass="0.0136373" diaginertia="3.653e-06 3.16431e-06 1.75862e-06" />
+                                  <joint name="a27_finger_r_joint_5_little4" pos="0 0 0" axis="0 1 0" range="-1.57 1.57" actuatorfrcrange="-1000 1000" class="XM335" />
+                                  <geom class="no_contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_tip" />
+                                  <geom class="contact" type="mesh" rgba="0.2 0.2 0.2 1" mesh="rh_5_finger_tip" />
+                                  <body name="little_tip" pos="0 0 0.02425">
+                                    <inertial pos="0 0 0" mass="1e-06" diaginertia="1e-06 1e-06 1e-06" />
+                                  </body>
+                                </body>
+                              </body>
+                            </body>
+                          </body>
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+    <body name="enclosure" pos="-0.293 0.482 -0.091" quat="0.707388 0.706825 0 0">
+      <geom class="no_contact" type="mesh" mesh="enclosure_decimated" />
+    </body>
+  </worldbody>
+</mujoco>

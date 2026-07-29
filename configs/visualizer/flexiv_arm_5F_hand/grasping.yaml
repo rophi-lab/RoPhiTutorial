@@ -1,0 +1,59 @@
+name: flexiv_arm_5F_hand
+vis_freq: 30
+
+flexiv_arm_5F_hand:
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 20
+
+  urdf_path: assets/scene/flexiv_arm/urdf/Rizon4_viser.urdf
+  mesh_dir: ""
+
+  robot_col_info_channel: sw_flexiv_arm_hand_robot_col_info
+  static_col_info_channel: sw_flexiv_arm_hand_static_col_info
+  col_dist_thr: 0.12
+
+  # Grasping object (published by grasping env).
+  object_pose_channel: sw_grasp_object_pose
+  object_mesh_path: assets/object_mesh/green_bowl/textured_mesh.obj
+
+  # Controller grasp viz (candidate pairs + fingertip cur/tgt + LVF paths).
+  grasp_candidates_channel: sw_grasp_candidates
+  fingertip_viz_channel: sw_grasp_fingertips
+  ft_path_viz_channel: sw_grasp_ft_paths
+
+  # Closing-phase contact viz (controller publishes [p|v] as NamedVecList 6-D).
+  # Magenta = contact force arrows (m per N via force scale).
+  # Cyan = contact normal arrows (unit normals, fixed length via normal scale).
+  contact_force_arrows_channel: sw_contact_force_arrows
+  contact_normal_arrows_channel: sw_contact_normal_arrows
+  contact_force_arrow_scale: 0.02
+  contact_normal_arrow_scale: 0.03
+
+  col_pairs:
+    - ["link2", "wall_back"]
+    - ["link2", "wall_left"]
+    - ["link3", "wall_back"]
+    - ["link3", "wall_left"]
+    - ["link3", "floor"]
+    - ["link4", "wall_back"]
+    - ["link4", "wall_left"]
+    - ["link4", "floor"]
+    - ["link5", "wall_back"]
+    - ["link5", "wall_left"]
+    - ["link5", "floor"]
+    - ["link6", "wall_back"]
+    - ["link6", "wall_left"]
+    - ["link6", "floor"]
+    - ["link7", "wall_back"]
+    - ["link7", "wall_left"]
+    - ["link7", "floor"]
+    - ["palm", "wall_back"]
+    - ["palm", "wall_left"]
+    - ["palm", "floor"]
+
+  self_col_pairs:
+    - ["palm", "link1"]
+    - ["palm", "link2"]
+    - ["palm", "link3"]

@@ -1,0 +1,11 @@
+package ctrl;
+
+struct p2p_gains_cmd_t
+{
+    double timestamp;
+    float kp_scale;
+    float kd_scale;
+    float fjc_scale;
+    float friction_phi;
+    boolean do_friction_comp;
+}

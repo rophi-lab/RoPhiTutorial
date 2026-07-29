@@ -1,0 +1,8 @@
+package clock;
+
+
+
+struct clock_t
+{
+    float timestamp;
+}

@@ -1,0 +1,18 @@
+name: flexiv_arm_5F_hand
+vis_freq: 30
+
+flexiv_arm_5F_hand:
+  # Channels the sim env publishes joint_meas_t on (SimFlexivArm5FHand). These
+  # are the same names the hardware bridge + hand process use, so this config
+  # reads from sim or hardware without changes.
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 20
+
+  # Combined arm + hand + mount + enclosure URDF. Already uses relative mesh
+  # paths, so it loads directly (no rewrite needed).
+  urdf_path: assets/scene/flexiv_arm/urdf/Rizon4_viser.urdf
+  # Optional yourdfpy mesh_dir override; leave blank to use the URDF's own paths.
+  mesh_dir: ""
+

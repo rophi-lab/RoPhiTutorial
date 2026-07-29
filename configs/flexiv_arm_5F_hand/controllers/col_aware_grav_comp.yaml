@@ -1,0 +1,94 @@
+name: col_aware_grav_comp
+ctrl_freq: 1000
+env_mode: sim_real_time
+
+# Pinocchio model (RobotWrapper needs mesh dirs to resolve the URDF meshes).
+urdf_path: assets/scene/flexiv_arm/urdf/Rizon4_viser.urdf
+mesh_path:
+  path_1: assets/scene/flexiv_arm
+  path_2: assets/scene/flexiv_arm/Rizon4
+  path_3: assets/scene/flexiv_arm/robotis5f
+
+num_joints: 27
+# arm [-25,-40,35,100,50,30,60] deg -> rad; hand open (20 zeros).
+default_q_values: [
+  -0.4363323, -0.6981317, 0.6108652, 1.7453293, 0.8726646, 0.5235988, 1.0471976,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+]
+
+# PD gains. Zeroed in the "grav_comp" (free-float) state; applied only when
+# repelling from / avoiding an obstacle. Arm first 7, hand last 20.
+kp: [200, 200, 200, 200, 100, 100, 35,
+     2, 2, 2, 2,  2, 2, 2, 2,  2, 2, 2, 2,  2, 2, 2, 2,  2, 2, 2, 2]
+kd: [20, 20, 20, 20, 10, 10, 3.5,
+     0.05, 0.05, 0.05, 0.05,  0.05, 0.05, 0.05, 0.05,  0.05, 0.05, 0.05, 0.05,
+     0.05, 0.05, 0.05, 0.05,  0.05, 0.05, 0.05, 0.05]
+kp_multiplier: [1, 1, 1, 1, 1, 1, 1,
+                1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1]
+joint_velocity_limit: [2, 2, 2, 2, 2, 2, 2,
+                       5, 5, 5, 5,  5, 5, 5, 5,  5, 5, 5, 5,  5, 5, 5, 5,  5, 5, 5, 5]
+
+# Repulsive-field tuning: within margin_thr of safty_dist_thr, push away with a
+# velocity that grows to repulsive_coeff as the margin -> 0. Below safty_dist_thr
+# the controller stops (state="collision").
+safty_dist_thr: 0.02
+magin_thr: 0.08
+repulsive_coeff: 8
+
+# pinocchio BODY-frame names carrying collision primitives (from the platform).
+col_link_names: ["link1", "link2", "link3", "link4", "link5", "link6", "link7", "palm"]
+# static obstacle names (must match the env's static_col_info geoms = MJCF walls).
+obs_names: ["floor", "wall_back", "wall_left"]
+# link <-> obstacle pairs to distance-check each plan tick.
+col_pairs:
+  - ["link2", "wall_back"]
+  - ["link2", "wall_left"]
+  - ["link3", "wall_back"]
+  - ["link3", "wall_left"]
+  - ["link3", "floor"]
+  - ["link4", "wall_back"]
+  - ["link4", "wall_left"]
+  - ["link4", "floor"]
+  - ["link5", "wall_back"]
+  - ["link5", "wall_left"]
+  - ["link5", "floor"]
+  - ["link6", "wall_back"]
+  - ["link6", "wall_left"]
+  - ["link6", "floor"]
+  - ["link7", "wall_back"]
+  - ["link7", "wall_left"]
+  - ["link7", "floor"]
+  - ["palm", "wall_back"]
+  - ["palm", "wall_left"]
+  - ["palm", "floor"]
+
+plan_freq: 100
+plan_horizon: 0.1
+
+dict_joints:
+  arm:
+    joint_meas_channel: sw_flexiv_arm_joint_meas
+    list_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+  hand:
+    joint_meas_channel: sw_robotis_5F_hand_joint_meas
+    list_joint_idx: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                     17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+
+sub_manager:
+  name: arm_hand_joint_col_info
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  static_col_info_channel: sw_flexiv_arm_hand_static_col_info
+  robot_col_info_channel: sw_flexiv_arm_hand_robot_col_info
+  num_arm_joints: 7
+  num_hand_joints: 20
+
+pub_manager:
+  name: joint_ctrl
+  ctrl_channel: sw_flexiv_arm_hand_joint_ctrl
+
+print_period: 1.0

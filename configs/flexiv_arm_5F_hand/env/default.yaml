@@ -1,0 +1,49 @@
+name: default_mujoco
+scene_xml_path: assets/scene/flexiv_arm/hand_default.xml
+
+env_mode: sim_real_time
+# env_mode: sim_sim_time
+vis_mode: vis_on
+
+# Keep at 1 in SIM_REAL_TIME so each env tick advances sim time by exactly one
+# sim_dt and the publish rate matches the *_joint_meas_freq cleanly.
+sim_steps_per_control: 1
+
+sim_freq: 1000
+view_freq: 30
+
+# Rate at which the platform publishes joint_meas_t over LCM.
+arm_joint_meas_freq: 1000
+hand_joint_meas_freq: 1000
+
+platform:
+  name: flexiv_arm_5f_hand
+  # [arm(7), hand(20)] = 27. Arm at [-25, -40, 35, 100, 50, 30, 60] deg -> rad;
+  # hand open. Matches the controller's default_q so the sim starts at the target.
+  default_q_values: [
+    -0.4363323, -0.6981317, 0.6108652, 1.7453293, 0.8726646, 0.5235988, 1.0471976,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+  ]
+  # No plant-side gravity comp - matches the real arm now that the Flexiv RDK's
+  # built-in grav comp is disabled (enable_gravity_comp: false). Gravity comp is
+  # the controller's responsibility (Pinocchio, from the robot state), so the
+  # command's tau_ff must include it. NOTE: with this false, a zero-torque
+  # command lets the arm fall in sim just like the real arm would - the
+  # arm-floating demo controller (which sends tau_ff=0) no longer holds pose.
+  gravity_comp: false
+
+sub_manager:
+  name: joint
+  ctrl_channel: sw_flexiv_arm_hand_joint_ctrl
+  num_joints: 27
+  max_sub_freq: 2000
+
+pub_manager:
+  name: flexiv_arm_hand
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  max_pub_freq: 2000

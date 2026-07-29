@@ -1,0 +1,222 @@
+name: min_jerk_p2p
+ctrl_freq: 1000
+env_mode: sim_real_time
+
+urdf_path: assets/scene/flexiv_arm/urdf/Rizon4_viser.urdf
+mesh_path:
+  path_1: assets/scene/flexiv_arm
+  path_2: assets/scene/flexiv_arm/Rizon4
+  path_3: assets/scene/flexiv_arm/robotis5f
+
+num_joints: 27
+default_q_values: [
+  -0.4363323, -0.6981317, 0.6108652, 1.7453293, 0.8726646, 0.5235988, 1.0471976,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+]
+
+# PD tracking / hold. Critically damped:
+#   kp_i = kd_i^2 / (4 * mean_mass_matrix_diag_i)
+# mean_mass_matrix_diag = diag(M(q)) from MuJoCo mj_fullM at default_q on
+# hand_default.xml (rigid-body inertia + joint armature). XM335 finger
+# joints use class armature="0.002418"; arm joints have armature="0".
+mean_mass_matrix_diag: [
+  2.0853, 2.1752, 1.4099, 1.3627, 0.0767, 0.0990, 0.0025,
+  0.002521, 0.002708, 0.002486, 0.002426,
+  0.002943, 0.002683, 0.002486, 0.002426,
+  0.002945, 0.002684, 0.002486, 0.002426,
+  0.002944, 0.002683, 0.002486, 0.002426,
+  0.002944, 0.002683, 0.002486, 0.002426,
+]
+kd: [20, 20, 15, 15, 5, 5, 0.2,
+     0.05, 0.05, 0.05, 0.05,  0.05, 0.05, 0.05, 0.05,  0.05, 0.05, 0.05, 0.05,
+     0.05, 0.05, 0.05, 0.05,  0.05, 0.05, 0.05, 0.05]
+kp: [48.0, 46.0, 39.9, 41.3, 81.5, 63.1, 4.0,
+     0.2479, 0.2308, 0.2514, 0.2576,
+     0.2124, 0.2329, 0.2514, 0.2576,
+     0.2122, 0.2329, 0.2514, 0.2576,
+     0.2123, 0.2329, 0.2514, 0.2576,
+     0.2123, 0.2329, 0.2514, 0.2576]
+joint_velocity_limit: [2, 2, 2, 2, 2, 2, 2,
+                       5, 5, 5, 5,  5, 5, 5, 5,  5, 5, 5, 5,  5, 5, 5, 5,  5, 5, 5, 5]
+
+# Live gain / friction scales (Viser sliders override via LCM).
+kp_scale: 1.0
+kd_scale: 1.0
+fjc_scale: 1.0
+num_arm_joints: 7
+arm_damping: 0.1  # soft viscous damping in grav mode (arm only)
+
+# Gravity / Coulomb friction FF: tau += Fjc * sat(qd_des / friction_phi).
+do_grav_comp: true
+do_friction_comp: false
+friction_phi: 0.03
+Fjc: [
+  0.5, 0.5, 0.3, 0.3, 0.2, 0.2, 0.2,
+  0.02, 0.02, 0.02, 0.02,
+  0.02, 0.02, 0.02, 0.02,
+  0.02, 0.02, 0.02, 0.02,
+  0.02, 0.02, 0.02, 0.02,
+  0.02, 0.02, 0.02, 0.02,
+]
+# Downsample status for Viser (~50 Hz at ctrl_freq=1000).
+status_publish_stride: 20
+
+# Collision (env + self). Clearance must be >= safty_dist_thr.
+safty_dist_thr: 0.02
+col_link_names: [
+  "link1", "link2", "link3", "link4", "link5", "link6", "link7", "palm",
+  "finger_r_link_1_thumb3", "finger_r_link_1_thumb4",
+  "finger_r_link_2_index2", "finger_r_link_2_index3", "finger_r_link_2_index4",
+  "finger_r_link_3_middle2", "finger_r_link_3_middle3", "finger_r_link_3_middle4",
+  "finger_r_link_4_ring2", "finger_r_link_4_ring3", "finger_r_link_4_ring4",
+  "finger_r_link_5_little2", "finger_r_link_5_little3", "finger_r_link_5_little4",
+]
+obs_names: ["floor", "wall_back", "wall_left"]
+col_pairs:
+  - ["link2", "wall_back"]
+  - ["link2", "wall_left"]
+  - ["link3", "wall_back"]
+  - ["link3", "wall_left"]
+  - ["link3", "floor"]
+  - ["link4", "wall_back"]
+  - ["link4", "wall_left"]
+  - ["link4", "floor"]
+  - ["link5", "wall_back"]
+  - ["link5", "wall_left"]
+  - ["link5", "floor"]
+  - ["link6", "wall_back"]
+  - ["link6", "wall_left"]
+  - ["link6", "floor"]
+  - ["link7", "wall_back"]
+  - ["link7", "wall_left"]
+  - ["link7", "floor"]
+  - ["palm", "wall_back"]
+  - ["palm", "wall_left"]
+  - ["palm", "floor"]
+  # Fingers <-> walls / floor
+  - ["finger_r_link_1_thumb3", "wall_back"]
+  - ["finger_r_link_1_thumb3", "wall_left"]
+  - ["finger_r_link_1_thumb3", "floor"]
+  - ["finger_r_link_1_thumb4", "wall_back"]
+  - ["finger_r_link_1_thumb4", "wall_left"]
+  - ["finger_r_link_1_thumb4", "floor"]
+  - ["finger_r_link_2_index2", "wall_back"]
+  - ["finger_r_link_2_index2", "wall_left"]
+  - ["finger_r_link_2_index2", "floor"]
+  - ["finger_r_link_2_index3", "wall_back"]
+  - ["finger_r_link_2_index3", "wall_left"]
+  - ["finger_r_link_2_index3", "floor"]
+  - ["finger_r_link_2_index4", "wall_back"]
+  - ["finger_r_link_2_index4", "wall_left"]
+  - ["finger_r_link_2_index4", "floor"]
+  - ["finger_r_link_3_middle2", "wall_back"]
+  - ["finger_r_link_3_middle2", "wall_left"]
+  - ["finger_r_link_3_middle2", "floor"]
+  - ["finger_r_link_3_middle3", "wall_back"]
+  - ["finger_r_link_3_middle3", "wall_left"]
+  - ["finger_r_link_3_middle3", "floor"]
+  - ["finger_r_link_3_middle4", "wall_back"]
+  - ["finger_r_link_3_middle4", "wall_left"]
+  - ["finger_r_link_3_middle4", "floor"]
+  - ["finger_r_link_4_ring2", "wall_back"]
+  - ["finger_r_link_4_ring2", "wall_left"]
+  - ["finger_r_link_4_ring2", "floor"]
+  - ["finger_r_link_4_ring3", "wall_back"]
+  - ["finger_r_link_4_ring3", "wall_left"]
+  - ["finger_r_link_4_ring3", "floor"]
+  - ["finger_r_link_4_ring4", "wall_back"]
+  - ["finger_r_link_4_ring4", "wall_left"]
+  - ["finger_r_link_4_ring4", "floor"]
+  - ["finger_r_link_5_little2", "wall_back"]
+  - ["finger_r_link_5_little2", "wall_left"]
+  - ["finger_r_link_5_little2", "floor"]
+  - ["finger_r_link_5_little3", "wall_back"]
+  - ["finger_r_link_5_little3", "wall_left"]
+  - ["finger_r_link_5_little3", "floor"]
+  - ["finger_r_link_5_little4", "wall_back"]
+  - ["finger_r_link_5_little4", "wall_left"]
+  - ["finger_r_link_5_little4", "floor"]
+self_col_pairs:
+  - ["palm", "link1"]
+  - ["palm", "link2"]
+  - ["palm", "link3"]
+  - ["link7", "link1"]
+  - ["link7", "link2"]
+  - ["link7", "link3"]
+  - ["link6", "link1"]
+  - ["link6", "link2"]
+  - ["link5", "link1"]
+  - ["link5", "link2"]
+  # Distal fingertips <-> proximal arm links
+  - ["finger_r_link_1_thumb4", "link1"]
+  - ["finger_r_link_1_thumb4", "link2"]
+  - ["finger_r_link_1_thumb4", "link3"]
+  - ["finger_r_link_2_index4", "link1"]
+  - ["finger_r_link_2_index4", "link2"]
+  - ["finger_r_link_2_index4", "link3"]
+  - ["finger_r_link_3_middle4", "link1"]
+  - ["finger_r_link_3_middle4", "link2"]
+  - ["finger_r_link_3_middle4", "link3"]
+  - ["finger_r_link_4_ring4", "link1"]
+  - ["finger_r_link_4_ring4", "link2"]
+  - ["finger_r_link_4_ring4", "link3"]
+  - ["finger_r_link_5_little4", "link1"]
+  - ["finger_r_link_5_little4", "link2"]
+  - ["finger_r_link_5_little4", "link3"]
+  # Inter-finger (non-adjacent)
+  - ["finger_r_link_1_thumb4", "finger_r_link_2_index4"]
+  - ["finger_r_link_1_thumb4", "finger_r_link_3_middle4"]
+  - ["finger_r_link_1_thumb4", "finger_r_link_4_ring4"]
+  - ["finger_r_link_1_thumb4", "finger_r_link_5_little4"]
+  - ["finger_r_link_2_index4", "finger_r_link_4_ring4"]
+  - ["finger_r_link_2_index4", "finger_r_link_5_little4"]
+  - ["finger_r_link_3_middle4", "finger_r_link_5_little4"]
+
+# Sampling (key 1): randomize these joints; others stay at current.
+sample_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+joint_limit_margin: 0.05
+sample_max_tries: 500
+
+# Planning (key 2): RRT-Connect → shortcut → B-spline → min-jerk time scaling.
+seg_check_steps: 20
+rrt_step_size: 0.3
+rrt_max_iters: 2500
+rrt_goal_bias: 0.05
+rrt_shortcut_iters: 100
+bspline_samples: 80
+traj_dt: 0.01
+# Downsample planned traj for LCM (keep every N-th sample + final).
+traj_publish_stride: 5
+# null => auto from path length / joint velocity limits.
+traj_duration: null
+traj_duration_scale: 1.25
+
+dict_joints:
+  arm:
+    joint_meas_channel: sw_flexiv_arm_joint_meas
+    list_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+  hand:
+    joint_meas_channel: sw_robotis_5F_hand_joint_meas
+    list_joint_idx: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                     17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+
+sub_manager:
+  name: arm_hand_joint_col_info
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  static_col_info_channel: sw_flexiv_arm_hand_static_col_info
+  robot_col_info_channel: sw_flexiv_arm_hand_robot_col_info
+  gains_cmd_channel: sw_p2p_gains_cmd
+  num_arm_joints: 7
+  num_hand_joints: 20
+
+pub_manager:
+  name: joint_ctrl_traj
+  ctrl_channel: sw_flexiv_arm_hand_joint_ctrl
+  target_joint_channel: sw_p2p_target_joint
+  traj_channel: sw_p2p_joint_traj
+  status_channel: sw_p2p_status

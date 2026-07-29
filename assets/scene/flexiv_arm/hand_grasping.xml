@@ -1,0 +1,592 @@
+<mujoco model="flexiv_arm_5f_hand_grasping">
+  <include file="Rizon4_hand_robot.xml"/>
+
+  <compiler angle="radian"/>
+
+  <option timestep="0.001" integrator="implicitfast"/>
+
+  <asset>
+    <texture type="skybox" builtin="gradient"
+             rgb1="0.3 0.5 0.7" rgb2="0 0 0"
+             width="512" height="3072"/>
+    <texture name="groundplane" type="2d" builtin="checker"
+             rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+             mark="edge" markrgb="0.8 0.8 0.8"
+             width="300" height="300"/>
+    <material name="groundplane" texture="groundplane"
+              texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    <!-- Visual CAD mesh + V-HACD convex parts for concave collision. -->
+    <mesh name="green_bowl_mesh" file="../../object_mesh/green_bowl/textured_mesh.obj"/>
+    <mesh name="green_bowl_part_000" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_000.obj"/>
+    <mesh name="green_bowl_part_001" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_001.obj"/>
+    <mesh name="green_bowl_part_002" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_002.obj"/>
+    <mesh name="green_bowl_part_003" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_003.obj"/>
+    <mesh name="green_bowl_part_004" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_004.obj"/>
+    <mesh name="green_bowl_part_005" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_005.obj"/>
+    <mesh name="green_bowl_part_006" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_006.obj"/>
+    <mesh name="green_bowl_part_007" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_007.obj"/>
+    <mesh name="green_bowl_part_008" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_008.obj"/>
+    <mesh name="green_bowl_part_009" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_009.obj"/>
+    <mesh name="green_bowl_part_010" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_010.obj"/>
+    <mesh name="green_bowl_part_011" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_011.obj"/>
+    <mesh name="green_bowl_part_012" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_012.obj"/>
+    <mesh name="green_bowl_part_013" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_013.obj"/>
+    <mesh name="green_bowl_part_014" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_014.obj"/>
+    <mesh name="green_bowl_part_015" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_015.obj"/>
+    <mesh name="green_bowl_part_016" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_016.obj"/>
+    <mesh name="green_bowl_part_017" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_017.obj"/>
+    <mesh name="green_bowl_part_018" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_018.obj"/>
+    <mesh name="green_bowl_part_019" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_019.obj"/>
+    <mesh name="green_bowl_part_020" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_020.obj"/>
+    <mesh name="green_bowl_part_021" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_021.obj"/>
+    <mesh name="green_bowl_part_022" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_022.obj"/>
+    <mesh name="green_bowl_part_023" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_023.obj"/>
+    <mesh name="green_bowl_part_024" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_024.obj"/>
+    <mesh name="green_bowl_part_025" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_025.obj"/>
+    <mesh name="green_bowl_part_026" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_026.obj"/>
+    <mesh name="green_bowl_part_027" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_027.obj"/>
+    <mesh name="green_bowl_part_028" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_028.obj"/>
+    <mesh name="green_bowl_part_029" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_029.obj"/>
+    <mesh name="green_bowl_part_030" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_030.obj"/>
+    <mesh name="green_bowl_part_031" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_031.obj"/>
+    <mesh name="green_bowl_part_032" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_032.obj"/>
+    <mesh name="green_bowl_part_033" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_033.obj"/>
+    <mesh name="green_bowl_part_034" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_034.obj"/>
+    <mesh name="green_bowl_part_035" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_035.obj"/>
+    <mesh name="green_bowl_part_036" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_036.obj"/>
+    <mesh name="green_bowl_part_037" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_037.obj"/>
+    <mesh name="green_bowl_part_038" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_038.obj"/>
+    <mesh name="green_bowl_part_039" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_039.obj"/>
+    <mesh name="green_bowl_part_040" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_040.obj"/>
+    <mesh name="green_bowl_part_041" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_041.obj"/>
+    <mesh name="green_bowl_part_042" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_042.obj"/>
+    <mesh name="green_bowl_part_043" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_043.obj"/>
+    <mesh name="green_bowl_part_044" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_044.obj"/>
+    <mesh name="green_bowl_part_045" file="../../object_mesh/green_bowl/convexification/textured_mesh/part_045.obj"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 -0.1 1.5" dir="0 0.2 -1"
+           diffuse="0.7 0.7 0.7" specular="0.3 0.3 0.3"
+           directional="true" castshadow="true"/>
+
+    <geom name="floor" type="plane" size="0 0 0.05" pos="0 0 -0.04"
+          group="0" material="groundplane"
+          friction="1.0 0.02 0.02"/>
+    <geom name="wall_back" type="box" size="0.05 0.85 0.9" pos="-0.28 0 0.9"
+          rgba="0.55 0.57 0.62 0.3" friction="0.5 0.02 0.02"/>
+    <geom name="wall_left" type="box" size="0.85 0.05 0.9" pos="0 -0.45 0.9"
+          rgba="0.55 0.57 0.62 0.3" friction="0.5 0.02 0.02"/>
+
+    <!-- Free green_bowl: visual textured mesh + convexification collision. -->
+    <body name="grasp_object" pos="0.48 0.05 0.12">
+      <freejoint name="grasp_object_free"/>
+      <geom name="grasp_object_vis"
+            type="mesh"
+            mesh="green_bowl_mesh"
+            rgba="0.2 0.75 0.35 1"
+            contype="0"
+            conaffinity="0"
+            group="1"
+            density="0"/>
+      <geom name="grasp_object_col_000"
+            type="mesh"
+            mesh="green_bowl_part_000"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_001"
+            type="mesh"
+            mesh="green_bowl_part_001"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_002"
+            type="mesh"
+            mesh="green_bowl_part_002"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_003"
+            type="mesh"
+            mesh="green_bowl_part_003"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_004"
+            type="mesh"
+            mesh="green_bowl_part_004"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_005"
+            type="mesh"
+            mesh="green_bowl_part_005"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_006"
+            type="mesh"
+            mesh="green_bowl_part_006"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_007"
+            type="mesh"
+            mesh="green_bowl_part_007"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_008"
+            type="mesh"
+            mesh="green_bowl_part_008"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_009"
+            type="mesh"
+            mesh="green_bowl_part_009"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_010"
+            type="mesh"
+            mesh="green_bowl_part_010"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_011"
+            type="mesh"
+            mesh="green_bowl_part_011"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_012"
+            type="mesh"
+            mesh="green_bowl_part_012"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_013"
+            type="mesh"
+            mesh="green_bowl_part_013"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_014"
+            type="mesh"
+            mesh="green_bowl_part_014"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_015"
+            type="mesh"
+            mesh="green_bowl_part_015"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_016"
+            type="mesh"
+            mesh="green_bowl_part_016"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_017"
+            type="mesh"
+            mesh="green_bowl_part_017"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_018"
+            type="mesh"
+            mesh="green_bowl_part_018"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_019"
+            type="mesh"
+            mesh="green_bowl_part_019"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_020"
+            type="mesh"
+            mesh="green_bowl_part_020"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_021"
+            type="mesh"
+            mesh="green_bowl_part_021"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_022"
+            type="mesh"
+            mesh="green_bowl_part_022"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_023"
+            type="mesh"
+            mesh="green_bowl_part_023"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_024"
+            type="mesh"
+            mesh="green_bowl_part_024"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_025"
+            type="mesh"
+            mesh="green_bowl_part_025"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_026"
+            type="mesh"
+            mesh="green_bowl_part_026"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_027"
+            type="mesh"
+            mesh="green_bowl_part_027"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_028"
+            type="mesh"
+            mesh="green_bowl_part_028"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_029"
+            type="mesh"
+            mesh="green_bowl_part_029"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_030"
+            type="mesh"
+            mesh="green_bowl_part_030"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_031"
+            type="mesh"
+            mesh="green_bowl_part_031"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_032"
+            type="mesh"
+            mesh="green_bowl_part_032"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_033"
+            type="mesh"
+            mesh="green_bowl_part_033"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_034"
+            type="mesh"
+            mesh="green_bowl_part_034"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_035"
+            type="mesh"
+            mesh="green_bowl_part_035"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_036"
+            type="mesh"
+            mesh="green_bowl_part_036"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_037"
+            type="mesh"
+            mesh="green_bowl_part_037"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_038"
+            type="mesh"
+            mesh="green_bowl_part_038"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_039"
+            type="mesh"
+            mesh="green_bowl_part_039"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_040"
+            type="mesh"
+            mesh="green_bowl_part_040"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_041"
+            type="mesh"
+            mesh="green_bowl_part_041"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_042"
+            type="mesh"
+            mesh="green_bowl_part_042"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_043"
+            type="mesh"
+            mesh="green_bowl_part_043"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_044"
+            type="mesh"
+            mesh="green_bowl_part_044"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+      <geom name="grasp_object_col_045"
+            type="mesh"
+            mesh="green_bowl_part_045"
+            rgba="0.2 0.75 0.35 0"
+            density="50"
+            friction="1.5 0.05 0.001"
+            contype="1"
+            conaffinity="1"
+            condim="6"
+            group="3"/>
+    </body>
+  </worldbody>
+
+  <contact>
+    <exclude body1="palm" body2="finger_r_link_1_thumb2"/>
+    <exclude body1="palm" body2="finger_r_link_2_index2"/>
+    <exclude body1="palm" body2="finger_r_link_3_middle2"/>
+    <exclude body1="palm" body2="finger_r_link_4_ring2"/>
+    <exclude body1="palm" body2="finger_r_link_5_little2"/>
+  </contact>
+
+  <actuator>
+    <motor joint="joint1" name="motor_joint1" ctrlrange="-123 123"/>
+    <motor joint="joint2" name="motor_joint2" ctrlrange="-123 123"/>
+    <motor joint="joint3" name="motor_joint3" ctrlrange="-64 64"/>
+    <motor joint="joint4" name="motor_joint4" ctrlrange="-64 64"/>
+    <motor joint="joint5" name="motor_joint5" ctrlrange="-39 39"/>
+    <motor joint="joint6" name="motor_joint6" ctrlrange="-39 39"/>
+    <motor joint="joint7" name="motor_joint7" ctrlrange="-39 39"/>
+    <motor joint="a08_finger_r_joint_1_thumb1"  name="torque_thumb1"  ctrlrange="-10 10"/>
+    <motor joint="a09_finger_r_joint_1_thumb2"  name="torque_thumb2"  ctrlrange="-10 10"/>
+    <motor joint="a10_finger_r_joint_1_thumb3"  name="torque_thumb3"  ctrlrange="-10 10"/>
+    <motor joint="a11_finger_r_joint_1_thumb4"  name="torque_thumb4"  ctrlrange="-10 10"/>
+    <motor joint="a12_finger_r_joint_2_index1"  name="torque_index1"  ctrlrange="-10 10"/>
+    <motor joint="a13_finger_r_joint_2_index2"  name="torque_index2"  ctrlrange="-10 10"/>
+    <motor joint="a14_finger_r_joint_2_index3"  name="torque_index3"  ctrlrange="-10 10"/>
+    <motor joint="a15_finger_r_joint_2_index4"  name="torque_index4"  ctrlrange="-10 10"/>
+    <motor joint="a16_finger_r_joint_3_middle1" name="torque_middle1" ctrlrange="-10 10"/>
+    <motor joint="a17_finger_r_joint_3_middle2" name="torque_middle2" ctrlrange="-10 10"/>
+    <motor joint="a18_finger_r_joint_3_middle3" name="torque_middle3" ctrlrange="-10 10"/>
+    <motor joint="a19_finger_r_joint_3_middle4" name="torque_middle4" ctrlrange="-10 10"/>
+    <motor joint="a20_finger_r_joint_4_ring1"   name="torque_ring1"   ctrlrange="-10 10"/>
+    <motor joint="a21_finger_r_joint_4_ring2"   name="torque_ring2"   ctrlrange="-10 10"/>
+    <motor joint="a22_finger_r_joint_4_ring3"   name="torque_ring3"   ctrlrange="-10 10"/>
+    <motor joint="a23_finger_r_joint_4_ring4"   name="torque_ring4"   ctrlrange="-10 10"/>
+    <motor joint="a24_finger_r_joint_5_little1" name="torque_little1" ctrlrange="-10 10"/>
+    <motor joint="a25_finger_r_joint_5_little2" name="torque_little2" ctrlrange="-10 10"/>
+    <motor joint="a26_finger_r_joint_5_little3" name="torque_little3" ctrlrange="-10 10"/>
+    <motor joint="a27_finger_r_joint_5_little4" name="torque_little4" ctrlrange="-10 10"/>
+  </actuator>
+</mujoco>

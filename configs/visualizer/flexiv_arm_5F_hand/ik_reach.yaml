@@ -1,0 +1,65 @@
+name: flexiv_arm_5F_hand
+vis_freq: 30
+
+flexiv_arm_5F_hand:
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 20
+
+  urdf_path: assets/scene/flexiv_arm/urdf/Rizon4_viser.urdf
+  mesh_dir: ""
+
+  robot_col_info_channel: sw_flexiv_arm_hand_robot_col_info
+  static_col_info_channel: sw_flexiv_arm_hand_static_col_info
+  col_dist_thr: 0.12
+
+  # P2P / IK-reach overlays.
+  target_joint_channel: sw_p2p_target_joint
+  traj_channel: sw_p2p_joint_traj
+  traj_frame: palm
+  palm_pose_channel: sw_ik_reach_palm_pose
+  palm_frame_axes_length: 0.08
+  status_channel: sw_p2p_status
+  gains_cmd_channel: sw_p2p_gains_cmd
+  # Initial Viser slider values (should match controller defaults).
+  kp_scale: 1.0
+  kd_scale: 1.0
+  fjc_scale: 1.0
+  friction_phi: 0.03
+  do_friction_comp: true
+  plot_history_s: 8.0
+
+  # Match collision.yaml / min_jerk_p2p controller (floor + walls).
+  col_pairs:
+    - ["link2", "wall_back"]
+    - ["link2", "wall_left"]
+    - ["link3", "wall_back"]
+    - ["link3", "wall_left"]
+    - ["link3", "floor"]
+    - ["link4", "wall_back"]
+    - ["link4", "wall_left"]
+    - ["link4", "floor"]
+    - ["link5", "wall_back"]
+    - ["link5", "wall_left"]
+    - ["link5", "floor"]
+    - ["link6", "wall_back"]
+    - ["link6", "wall_left"]
+    - ["link6", "floor"]
+    - ["link7", "wall_back"]
+    - ["link7", "wall_left"]
+    - ["link7", "floor"]
+    - ["palm", "wall_back"]
+    - ["palm", "wall_left"]
+    - ["palm", "floor"]
+
+  self_col_pairs:
+    - ["palm", "link1"]
+    - ["palm", "link2"]
+    - ["palm", "link3"]
+    - ["link7", "link1"]
+    - ["link7", "link2"]
+    - ["link6", "link1"]
+    - ["link5", "link1"]
+    - ["finger_r_link_1_thumb4", "finger_r_link_3_middle4"]
+    - ["finger_r_link_2_index4", "finger_r_link_5_little4"]

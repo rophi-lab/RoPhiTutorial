@@ -1,0 +1,41 @@
+name: flexiv_arm_5F_hand_table_obs
+scene_xml_path: assets/scene/flexiv_arm/hand_table_obstacles.xml
+
+env_mode: sim_real_time
+vis_mode: vis_on
+
+sim_steps_per_control: 1
+sim_freq: 1000
+view_freq: 30
+
+arm_joint_meas_freq: 1000
+hand_joint_meas_freq: 1000
+
+# How often the collision geometry is (re)published (s).
+col_info_update_dt: 0.1
+
+platform:
+  name: flexiv_arm_5f_hand
+  default_q_values: [
+    -0.4363323, -0.6981317, 0.6108652, 1.7453293, 0.8726646, 0.5235988, 1.0471976,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+  ]
+  gravity_comp: false
+
+sub_manager:
+  name: joint
+  ctrl_channel: sw_flexiv_arm_hand_joint_ctrl
+  num_joints: 27
+  max_sub_freq: 2000
+
+pub_manager:
+  name: flexiv_arm_hand_col_info
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  static_col_info_channel: sw_flexiv_arm_hand_static_col_info
+  robot_col_info_channel: sw_flexiv_arm_hand_robot_col_info
+  max_pub_freq: 2000

@@ -1,0 +1,17 @@
+package collision;
+
+struct col_info_t
+{
+    float timestamp;
+
+    int32_t num_col_geoms; 
+    int32_t len_concat_sizes;
+
+    string concat_names;
+    string concat_geom_types;
+
+    int32_t list_size_dims[num_col_geoms];
+    
+    float concat_sizes[len_concat_sizes];
+    float list_offsets[num_col_geoms][4][4];
+}

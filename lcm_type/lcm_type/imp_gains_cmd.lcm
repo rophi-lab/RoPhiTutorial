@@ -1,0 +1,13 @@
+package ctrl;
+
+struct imp_gains_cmd_t
+{
+    double timestamp;
+    float kq_scale;
+    float dq_scale;
+    float kt_trans_scale;
+    float kt_rot_scale;
+    float dt_trans_scale;
+    float dt_rot_scale;
+    int8_t mode;  // -1=no change, 0=joint, 1=task
+}

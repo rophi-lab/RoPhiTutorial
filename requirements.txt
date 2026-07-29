@@ -1,0 +1,64 @@
+# basics
+numpy==2.2.5
+matplotlib==3.10.1
+omegaconf==2.3.0
+pytest==8.3.5
+scipy
+termcolor
+
+# lcm for communication
+lcm==1.5.1
+
+# mujoco simulations
+mujoco==3.3.1
+
+# pinocchio for robot dynamics
+# pin 3.4.0 links against urdfdom/tinyxml2 SONAMEs from the 4.x/10.x cmeel
+# packages; newer pip defaults (urdfdom 6 / tinyxml2 11) break `import pinocchio`.
+pin==3.4.0
+cmeel-urdfdom==4.0.1
+cmeel-tinyxml2==10.0.0
+
+# visualization
+viser
+yourdfpy
+trimesh
+
+
+# fcl for collision detection (import name: fcl)
+python-fcl
+
+# optimization
+casadi
+osqp
+
+# computer vision
+opencv-python==4.11.0.86
+open3d
+apriltag-python
+
+# machine learning related
+torch>=2.3.1
+torchvision>=0.18.1
+transformers>=v4.37.1
+einops
+einops-exts
+tqdm
+
+
+# molmo dependencies
+absl-py
+cached_property
+fiddle >= 0.2.5
+rich
+boto3
+google-cloud-storage
+tokenizers
+packaging
+cached_path>=1.6.4
+datasets
+huggingface_hub
+sentencepiece
+requests
+gcsfs==2023.9.2
+accelerate

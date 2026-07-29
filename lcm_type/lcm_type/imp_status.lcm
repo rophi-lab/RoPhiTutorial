@@ -1,0 +1,22 @@
+package ctrl;
+
+struct imp_status_t
+{
+    double timestamp;
+    int8_t mode;  // 0=joint, 1=task
+    int32_t num_joints;
+    int32_t num_arm;
+    float q[num_joints];
+    float q_nom[num_joints];
+    float p[3];
+    float p_nom[3];
+    float quat_wxyz[4];
+    float quat_nom_wxyz[4];
+    float xi[6];  // SE3 body error (v, w) pinocchio order when task; joint: zeros except first dims unused
+    float kq_scale;
+    float dq_scale;
+    float kt_trans;
+    float kt_rot;
+    float dt_trans;
+    float dt_rot;
+}

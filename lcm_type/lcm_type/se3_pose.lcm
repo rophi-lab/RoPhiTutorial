@@ -1,0 +1,8 @@
+package pose;
+
+struct se3_pose_t
+{
+    double timestamp;
+    float position[3];
+    float quat_wxyz[4];
+}

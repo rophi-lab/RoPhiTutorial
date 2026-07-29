@@ -1,0 +1,22 @@
+name: flexiv_arm_5F_hand
+vis_freq: 30
+
+flexiv_arm_5F_hand:
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 20
+
+  urdf_path: assets/scene/flexiv_arm/urdf/Rizon4_viser.urdf
+  mesh_dir: ""
+
+  # Impedance overlays / gain tuning.
+  impedance_status_channel: sw_imp_status
+  impedance_gains_cmd_channel: sw_imp_gains_cmd
+  impedance_frame_axes_length: 0.08
+  kq_scale: 1.0
+  dq_scale: 1.0
+  kt_trans_scale: 1.0
+  kt_rot_scale: 1.0
+  dt_trans_scale: 1.0
+  dt_rot_scale: 1.0

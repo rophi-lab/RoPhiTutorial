@@ -1,0 +1,42 @@
+name: grav_comp
+ctrl_freq: 1000
+env_mode: sim_real_time
+
+num_joints: 27
+num_arm_joints: 7
+
+# Pinocchio gravity model (same URDF as the sim).
+urdf_path: assets/scene/flexiv_arm/urdf/Rizon4_viser.urdf
+
+# Optional seed before the first measurement arrives.
+default_q: [
+  -0.4363323, -0.6981317, 0.6108652, 1.7453293, 0.8726646, 0.5235988, 1.0471976,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+  0, 0, 0, 0,
+]
+
+# Viscous damping on the arm joints only (Nm / (rad/s)).
+arm_damping: 0.01
+
+dict_joints:
+  arm:
+    joint_meas_channel: sw_flexiv_arm_joint_meas
+    list_joint_idx: [0, 1, 2, 3, 4, 5, 6]
+  hand:
+    joint_meas_channel: sw_robotis_5F_hand_joint_meas
+    list_joint_idx: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                     17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+
+sub_manager:
+  name: arm_hand_joint
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 20
+
+pub_manager:
+  name: joint_ctrl
+  ctrl_channel: sw_flexiv_arm_hand_joint_ctrl

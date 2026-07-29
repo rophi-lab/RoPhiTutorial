@@ -1,0 +1,10 @@
+package vector;
+
+struct vec_list_t
+{
+    double timestamp;
+    int32_t num_vecs;
+    int32_t vec_dim;
+    string name_list[num_vecs];
+    float vec_list[num_vecs][vec_dim];
+}

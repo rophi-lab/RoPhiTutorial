@@ -1,0 +1,95 @@
+<mujoco model="flexiv_arm_5f_hand_scene">
+  <include file="Rizon4_hand_robot.xml"/>
+
+  <compiler angle="radian"/>
+
+  <option timestep="0.001" integrator="implicitfast"/>
+
+  <asset>
+    <texture type="skybox" builtin="gradient"
+             rgb1="0.3 0.5 0.7" rgb2="0 0 0"
+             width="512" height="3072"/>
+    <texture name="groundplane" type="2d" builtin="checker"
+             rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+             mark="edge" markrgb="0.8 0.8 0.8"
+             width="300" height="300"/>
+    <material name="groundplane" texture="groundplane"
+              texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+  </asset>
+
+  <worldbody>
+    <light pos="0 -0.1 1.5" dir="0 0.2 -1"
+           diffuse="0.7 0.7 0.7" specular="0.3 0.3 0.3"
+           directional="true" castshadow="true"/>
+
+    <!-- Collision geometries: three walls of the cell - the floor, a wall
+         behind the arm (-x), and a wall to the left (+y). All use MuJoCo's
+         default contype/conaffinity (1/1), so they collide with the robot's
+         convex collision meshes (which are also 1/1). Static world geoms don't
+         collide with each other, only with the robot.
+
+         Positions/sizes are PLACEHOLDERS clear of the arm at its default pose
+         (arm spans x[-0.29,0.59] y[-0.13,0.48]); adjust to match the real cell.
+         The walls are translucent so they don't obscure the arm; flip the left
+         wall to -y if "left" is the other side for your setup. -->
+    <geom name="floor" type="plane" size="0 0 0.05" pos="0 0 -0.04"
+          group="0" material="groundplane"
+          friction="0.5 0.02 0.02"/>
+    <geom name="wall_back" type="box" size="0.05 0.85 0.9" pos="-0.28 0 0.9"
+          rgba="0.55 0.57 0.62 0.3" friction="0.5 0.02 0.02"/>
+    <geom name="wall_left" type="box" size="0.85 0.05 0.9" pos="0 -0.45 0.9"
+          rgba="0.55 0.57 0.62 0.3" friction="0.5 0.02 0.02"/>
+  </worldbody>
+
+  <!-- Self-collision is ON. MuJoCo's filterparent already excludes each
+       parent<->child pair (arm chain, palm<->finger base, consecutive finger
+       phalanges). The only remaining "adjacent and touching by construction"
+       pairs are the palm hull vs each finger's SECOND phalanx (fingerN2), which
+       overlap slightly at rest; exclude those. Genuine self-collisions
+       (fingertips into the palm on a fist, finger-vs-finger, hand-vs-arm) stay
+       active. -->
+  <contact>
+    <exclude body1="palm" body2="finger_r_link_1_thumb2"/>
+    <exclude body1="palm" body2="finger_r_link_2_index2"/>
+    <exclude body1="palm" body2="finger_r_link_3_middle2"/>
+    <exclude body1="palm" body2="finger_r_link_4_ring2"/>
+    <exclude body1="palm" body2="finger_r_link_5_little2"/>
+  </contact>
+
+  <!-- Torque actuators. SimFlexivArm5FHand computes
+       tau = kp*(q_des-q) + kd*(qd_des-qd) + tau_ff (+ gravity comp on the arm)
+       and writes to ctrl[]. 7 arm joints + 20 Robotis hand joints. -->
+  <actuator>
+    <!-- Flexiv Rizon4 arm (ctrlrange = joint effort limits) -->
+    <motor joint="joint1" name="motor_joint1" ctrlrange="-123 123"/>
+    <motor joint="joint2" name="motor_joint2" ctrlrange="-123 123"/>
+    <motor joint="joint3" name="motor_joint3" ctrlrange="-64 64"/>
+    <motor joint="joint4" name="motor_joint4" ctrlrange="-64 64"/>
+    <motor joint="joint5" name="motor_joint5" ctrlrange="-39 39"/>
+    <motor joint="joint6" name="motor_joint6" ctrlrange="-39 39"/>
+    <motor joint="joint7" name="motor_joint7" ctrlrange="-39 39"/>
+
+    <!-- Robotis RH-5 hand: 5 fingers x 4 joints. ctrlrange bounds the PD
+         torque; fingers are light so a few Nm is ample headroom. -->
+    <motor joint="a08_finger_r_joint_1_thumb1"  name="motor_thumb1"  ctrlrange="-10 10"/>
+    <motor joint="a09_finger_r_joint_1_thumb2"  name="motor_thumb2"  ctrlrange="-10 10"/>
+    <motor joint="a10_finger_r_joint_1_thumb3"  name="motor_thumb3"  ctrlrange="-10 10"/>
+    <motor joint="a11_finger_r_joint_1_thumb4"  name="motor_thumb4"  ctrlrange="-10 10"/>
+    <motor joint="a12_finger_r_joint_2_index1"  name="motor_index1"  ctrlrange="-10 10"/>
+    <motor joint="a13_finger_r_joint_2_index2"  name="motor_index2"  ctrlrange="-10 10"/>
+    <motor joint="a14_finger_r_joint_2_index3"  name="motor_index3"  ctrlrange="-10 10"/>
+    <motor joint="a15_finger_r_joint_2_index4"  name="motor_index4"  ctrlrange="-10 10"/>
+    <motor joint="a16_finger_r_joint_3_middle1" name="motor_middle1" ctrlrange="-10 10"/>
+    <motor joint="a17_finger_r_joint_3_middle2" name="motor_middle2" ctrlrange="-10 10"/>
+    <motor joint="a18_finger_r_joint_3_middle3" name="motor_middle3" ctrlrange="-10 10"/>
+    <motor joint="a19_finger_r_joint_3_middle4" name="motor_middle4" ctrlrange="-10 10"/>
+    <motor joint="a20_finger_r_joint_4_ring1"   name="motor_ring1"   ctrlrange="-10 10"/>
+    <motor joint="a21_finger_r_joint_4_ring2"   name="motor_ring2"   ctrlrange="-10 10"/>
+    <motor joint="a22_finger_r_joint_4_ring3"   name="motor_ring3"   ctrlrange="-10 10"/>
+    <motor joint="a23_finger_r_joint_4_ring4"   name="motor_ring4"   ctrlrange="-10 10"/>
+    <motor joint="a24_finger_r_joint_5_little1" name="motor_little1" ctrlrange="-10 10"/>
+    <motor joint="a25_finger_r_joint_5_little2" name="motor_little2" ctrlrange="-10 10"/>
+    <motor joint="a26_finger_r_joint_5_little3" name="motor_little3" ctrlrange="-10 10"/>
+    <motor joint="a27_finger_r_joint_5_little4" name="motor_little4" ctrlrange="-10 10"/>
+  </actuator>
+</mujoco>

@@ -1,0 +1,53 @@
+name: flexiv_arm_5F_hand
+vis_freq: 30
+
+flexiv_arm_5F_hand:
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  num_arm_joints: 7
+  num_hand_joints: 20
+
+  urdf_path: assets/scene/flexiv_arm/urdf/Rizon4_viser.urdf
+  mesh_dir: ""
+
+  robot_col_info_channel: sw_flexiv_arm_hand_robot_col_info
+  static_col_info_channel: sw_flexiv_arm_hand_static_col_info
+
+  # IK target published by ik_qp controller.
+  target_pose_channel: sw_ik_target_pose
+
+  col_dist_thr: 0.10
+
+  col_pairs:
+    - ["link2", "wall_back"]
+    - ["link2", "wall_left"]
+    - ["link3", "wall_back"]
+    - ["link3", "wall_left"]
+    - ["link3", "floor"]
+    - ["link4", "wall_back"]
+    - ["link4", "wall_left"]
+    - ["link4", "floor"]
+    - ["link5", "wall_back"]
+    - ["link5", "wall_left"]
+    - ["link5", "floor"]
+    - ["link6", "wall_back"]
+    - ["link6", "wall_left"]
+    - ["link6", "floor"]
+    - ["link7", "wall_back"]
+    - ["link7", "wall_left"]
+    - ["link7", "floor"]
+    - ["palm", "wall_back"]
+    - ["palm", "wall_left"]
+    - ["palm", "floor"]
+
+  self_col_pairs:
+    - ["palm", "link1"]
+    - ["palm", "link2"]
+    - ["palm", "link3"]
+    - ["link7", "link1"]
+    - ["link7", "link2"]
+    - ["link7", "link3"]
+    - ["link6", "link1"]
+    - ["link6", "link2"]
+    - ["link5", "link1"]
+    - ["link5", "link2"]

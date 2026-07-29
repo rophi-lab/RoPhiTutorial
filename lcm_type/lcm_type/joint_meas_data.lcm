@@ -1,0 +1,12 @@
+package joint;
+
+
+
+struct joint_meas_t
+{
+    double timestamp;
+    int32_t num_joints; 
+    float q[num_joints];
+    float qd[num_joints];
+    float tau[num_joints];
+}
