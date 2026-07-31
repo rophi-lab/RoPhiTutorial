@@ -1098,6 +1098,22 @@ class MjEvalGraspControl(BaseController):
 
         eps_weight = float(self._gen_config.get("eps_weight", 1.0))
 
+        gravity_wrench = None
+        if (
+            self._gravity_force_world is not None
+            and self._object_mass > 0.0
+            and bool(self._gen_config.get("enable_gravity_wrench", True))
+        ):
+            R_cad2w = self._cad_in_world_frame[:3, :3]
+            f_cad = R_cad2w.T @ self._gravity_force_world
+            tau_cad = np.cross(self._com_cad, f_cad)
+            gravity_wrench = np.concatenate([f_cad, tau_cad])
+            weight = float(np.linalg.norm(self._gravity_force_world))
+            min_fn = max(
+                float(min_fn),
+                float(self._gen_config.get("min_fn_gravity_scale", 1.0)) * weight,
+            )
+
         f, solved = generate_contact_forces(
             Jo,
             Jr_contact,
@@ -1107,6 +1123,7 @@ class MjEvalGraspControl(BaseController):
             null_space_margin,
             enable_torque_limit=enable_torque_limit,
             enable_achievable_force=enable_achievable_force,
+            gravity_wrench=gravity_wrench,
             actuated_mask=actuated_mask,
             contact_epsilon=contact_epsilon,
             eps_weight=eps_weight,

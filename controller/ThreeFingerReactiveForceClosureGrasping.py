@@ -70,6 +70,21 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
         self._cad_in_world_frame = np.eye(4)
         self._world2cad = np.eye(4)
         self._obj_center_in_cad_frame = np.zeros(3)
+        # Object gravity wrench for force-closure (CAD frame, about CAD origin).
+        self._object_mass = float(gen_cfg.get("object_mass", 0.0) or 0.0)
+        self._com_cad = np.asarray(
+            gen_cfg.get("object_com_cad", [0.0, 0.0, 0.0]), dtype=np.float64
+        ).reshape(3)
+        self._gravity_world = np.asarray(
+            gen_cfg.get("gravity", [0.0, 0.0, -9.81]), dtype=np.float64
+        ).reshape(3)
+        self._enable_gravity_wrench = bool(gen_cfg.get("enable_gravity_wrench", True))
+        # Ensure sum(fn) can at least support object weight (scale * m * |g|).
+        self._min_fn_gravity_scale = float(gen_cfg.get("min_fn_gravity_scale", 1.0))
+        self._physics_params_received = False
+        self._object_physics_channel = config["sub_manager"].get(
+            "object_physics_channel", "sw_grasp_object_physics"
+        )
         self._k_for_contact_force_control = float(
             gen_cfg.get("k_for_contact_force_control", 10.0)
         )
@@ -141,7 +156,21 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
         if isinstance(mesh, trimesh.Scene):
             mesh = mesh.dump(concatenate=True)
         self._force_mesh = mesh
-        self._obj_center_in_cad_frame = np.asarray(mesh.centroid, dtype=np.float64)
+        com_cfg = self._gen_config.get("object_com_cad", None)
+        if com_cfg is not None:
+            self._com_cad = np.asarray(com_cfg, dtype=np.float64).reshape(3)
+        else:
+            self._com_cad = np.asarray(
+                mesh.center_mass if hasattr(mesh, "center_mass") else mesh.centroid,
+                dtype=np.float64,
+            ).reshape(3)
+        self._obj_center_in_cad_frame = self._com_cad.copy()
+        if self._object_mass > 0.0:
+            print(
+                f"[3FForceClosure] gravity wrench enabled: "
+                f"mass={self._object_mass:.4f} kg (config), "
+                f"com_cad={self._com_cad}, g={self._gravity_world}"
+            )
 
         udf_res = int(gen.get("udf_resolution", 128))
         udf_pad = float(gen.get("udf_padding", 0.02))
@@ -183,6 +212,69 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
         self._hand_surface_normals_per_link = finger_normals + palm_normals
         self._hand_link_names = finger_links + ["palm"]
         self._palm_link_idx = len(finger_links)
+
+    def _check_and_get_data_from_que(self) -> None:
+        super()._check_and_get_data_from_que()
+        ch = self._object_physics_channel
+        if not ch or ch not in self.extr_sub_que_dict:
+            return
+        data = None
+        while not self.extr_sub_que_dict[ch].empty():
+            data = self.extr_sub_que_dict[ch].get()
+        if data is None:
+            return
+        try:
+            _, name_list, vec_list = data.get_data()
+        except Exception:
+            return
+        if name_list is None or "physics_params" not in name_list:
+            return
+        idx = name_list.index("physics_params")
+        p = np.asarray(vec_list[idx], dtype=np.float64).reshape(-1)
+        if p.size < 7:
+            return
+        mass = float(p[0])
+        com_cad = p[1:4].copy()
+        gravity = p[4:7].copy()
+        self._object_mass = mass
+        self._com_cad = com_cad
+        self._obj_center_in_cad_frame = com_cad.copy()
+        self._gravity_world = gravity
+        if not self._physics_params_received:
+            self._physics_params_received = True
+            print(
+                f"[3FForceClosure] object physics from env: "
+                f"mass={mass:.4f} kg, com_cad={com_cad}, gravity={gravity}"
+            )
+
+    def _gravity_wrench_cad(self):
+        """External gravity wrench on the object in CAD frame (about CAD origin).
+
+        Contact map ``Jo`` is also in CAD, so the QP cost
+        ``||G f + w_g||²`` drives net contact wrench toward ``-w_g``.
+        """
+        if (
+            not self._enable_gravity_wrench
+            or self._object_mass <= 0.0
+            or self._gravity_world is None
+        ):
+            return None
+        R_cad2w = self._cad_in_world_frame[:3, :3]
+        f_world = self._object_mass * np.asarray(self._gravity_world, dtype=np.float64)
+        f_cad = R_cad2w.T @ f_world
+        tau_cad = np.cross(self._com_cad, f_cad)
+        return np.concatenate([f_cad, tau_cad])
+
+    def _effective_min_fn(self, min_fn: float) -> float:
+        """Raise ``min_fn`` so total normal force can support object weight."""
+        if (
+            not self._enable_gravity_wrench
+            or self._object_mass <= 0.0
+            or self._min_fn_gravity_scale <= 0.0
+        ):
+            return float(min_fn)
+        weight = self._object_mass * float(np.linalg.norm(self._gravity_world))
+        return max(float(min_fn), self._min_fn_gravity_scale * weight)
 
     # ------------------------------------------------------------------
     # Closing plan: arm lift only; hand τ comes from control-loop force stack
@@ -728,6 +820,7 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
         torque_limit = self._hand_torque_limit()
         if min_fn is None:
             min_fn = self._gen_config.get("min_fn", 5.0)
+        min_fn = self._effective_min_fn(min_fn)
         mu = self._gen_config.get("mu", 0.3)
         null_space_margin = self._gen_config.get("null_space_margin", 0.01)
         enable_torque_limit = self._gen_config.get("enable_torque_limit", True)
@@ -752,6 +845,7 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
         else:
             contact_epsilon = None
         eps_weight = float(self._gen_config.get("eps_weight", 1.0))
+        gravity_wrench = self._gravity_wrench_cad()
 
         f, solved = generate_contact_forces(
             Jo,
@@ -762,6 +856,7 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
             null_space_margin,
             enable_torque_limit=enable_torque_limit,
             enable_achievable_force=enable_achievable_force,
+            gravity_wrench=gravity_wrench,
             actuated_mask=actuated_mask,
             contact_epsilon=contact_epsilon,
             eps_weight=eps_weight,

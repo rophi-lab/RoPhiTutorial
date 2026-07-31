@@ -47,6 +47,13 @@ grasp_squeeze_params_generator_config:
   k_for_contact_force_control: 10.0
   mu: 0.7
   min_fn: 5.0
+  # Drive G f → -w_g so contacts resist object weight (mass from env physics).
+  enable_gravity_wrench: true
+  # Raise min_fn to at least scale * m * |g| when mass is known.
+  min_fn_gravity_scale: 1.0
+  # Optional overrides if env physics is unavailable (0 → wait for LCM).
+  object_mass: 0.0
+  gravity: [0.0, 0.0, -9.81]
   null_space_margin: 0.5
   contact_dist_thr: 0.01
   attract_dist_thr: 0.015
@@ -191,6 +198,7 @@ sub_manager:
   static_col_info_channel: sw_flexiv_arm_hand_static_col_info
   robot_col_info_channel: sw_flexiv_arm_hand_robot_col_info
   object_pose_channel: sw_grasp_object_pose
+  object_physics_channel: sw_grasp_object_physics
   num_arm_joints: 7
   num_hand_joints: 20
   num_joints: 27

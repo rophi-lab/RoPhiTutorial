@@ -153,6 +153,7 @@ sub_manager:
   static_col_info_channel: sw_flexiv_arm_hand_static_col_info
   robot_col_info_channel: sw_flexiv_arm_hand_robot_col_info
   object_pose_channel: sw_grasp_object_pose
+  object_physics_channel: sw_grasp_object_physics
   num_arm_joints: 7
   num_hand_joints: 20
   num_joints: 27

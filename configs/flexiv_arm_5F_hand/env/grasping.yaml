@@ -45,4 +45,5 @@ pub_manager:
   static_col_info_channel: sw_flexiv_arm_hand_static_col_info
   robot_col_info_channel: sw_flexiv_arm_hand_robot_col_info
   object_pose_channel: sw_grasp_object_pose
+  object_physics_channel: sw_grasp_object_physics
   max_pub_freq: 2000
