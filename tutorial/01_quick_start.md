@@ -1,160 +1,129 @@
-# Quick Start
+# Quick start
 
-## Installation
+Welcome to RoPhiTutorial. This first lesson is not about fancy control theory — it is about **how the pieces talk to each other**. Once you can start the simulation and see the robot move under a simple controller, every later tutorial reuses the same pattern.
+
+We use a **Flexiv Rizon** arm (7 joints) plus a **Robotis RH-5** hand (20 joints), simulated in MuJoCo, controlled in a separate Python process, and visualized in Viser.
+
+---
+
+## 1. Run & LCM communication
+
+### What you will launch
+
+Open **three terminals** in the repository root and run:
 
 ```bash
-conda create -n rophi python=3.12
-conda activate rophi
-pip install -r requirements.txt
-```
-
-## Run (three terminals)
-
-From the repo root, start the sim environment, then a controller, then the visualizer:
-
-```bash
-# Terminal 1 — MuJoCo environment
 python run_env.py --config configs/flexiv_arm_5F_hand/env/default.yaml
 
-# Terminal 2 — gravity-compensation controller
 python run_controller.py --config configs/flexiv_arm_5F_hand/controllers/grav_comp.yaml
 
-# Terminal 3 — Viser visualizer
 python run_visualizer.py --config configs/visualizer/flexiv_arm_5F_hand/default.yaml
 ```
 
-In the env / controller terminals: `p` pauses, `q` quits.
+Start the **env** first (it owns the physics clock), then the controller, then the visualizer. You should see a MuJoCo window and a Viser page; the arm should look “floaty” under gravity compensation ([03](03_grav_comp.md)).
 
-For the collision-aware stack, swap in:
+| Key | Where | Action |
+|-----|--------|--------|
+| `p` | env or controller terminal | Pause |
+| `q` | env or controller terminal | Quit |
 
-- Env: `configs/flexiv_arm_5F_hand/env/collision.yaml`
-- Controller: `configs/flexiv_arm_5F_hand/controllers/col_aware_grav_comp.yaml`
-- Visualizer: `configs/visualizer/flexiv_arm_5F_hand/collision.yaml`
+### Why three processes?
+
+| Process | Everyday analogy | Job |
+|---------|------------------|-----|
+| **Env** | The physical world | Advance MuJoCo; publish “what the sensors see”; apply motor commands |
+| **Controller** | The brain / real-time computer | Read sensors; compute torques / setpoints; publish commands |
+| **Visualizer** | A camera + HUD | Draw the robot for you (does not affect physics) |
+
+Keeping them separate means:
+
+- physics can run at 1000 Hz while graphics runs at 30 Hz,
+- a crash in the visualizer does not kill the controller,
+- the same controller pattern can later talk to **real** hardware over the same message types.
+
+### What is LCM?
+
+**LCM** (Lightweight Communications and Marshalling) is a publish/subscribe bus. Think of named **channels** (like radio stations):
+
+- one process **publishes** a message on a channel,
+- any process that **subscribes** receives a copy.
+
+You do not call the other process’s Python functions directly. You only exchange messages. That is the discipline of this codebase.
+
+### Channels in this tutorial
+
+| Channel name | Message type | Who → whom | Meaning in plain words |
+|--------------|--------------|------------|------------------------|
+| `sw_flexiv_arm_joint_meas` | `JointMeas` | env → controller & viz | Arm joint angles $q$ and velocities $\dot q$ (7 numbers each) |
+| `sw_robotis_5F_hand_joint_meas` | `JointMeas` | env → controller & viz | Same for the hand (20 DoF) |
+| `sw_flexiv_arm_hand_joint_ctrl` | `JointCtrl` | controller → env | What the motors should do next (see below) |
+| `sim_clock` | time | env → controller | Simulation time so rates stay synchronized |
+
+A `JointCtrl` message packages five vectors of length 27 (arm+hand):
+
+$$
+\bigl(
+  q_{\mathrm{des}},\;
+  \dot q_{\mathrm{des}},\;
+  \tau_{\mathrm{ff}},\;
+  K_p,\;
+  K_d
+\bigr).
+$$
+
+You will learn what each means in [02](02_understanding_mujoco_simulator.md). For now: the env turns that message into motor torques.
+
+Later tutorials add more channels (collision shapes, object poses, arrows). The **pattern** never changes: env publishes world state; controller publishes commands; visualizer listens.
+
+```
+                 measurements
+        ┌──────────────────────────► Controller
+        │                                │
+Env ────┤                                │  JointCtrl
+        │                                ▼
+        │◄───────────────────────────────┘
+        │
+        └────── measurements ──────────► Visualizer
+```
 
 ---
 
-## Basics
+## 2. Ideas (architecture)
 
-This example is split into **three processes**. Each is started by a small `run_*.py` script that loads a YAML config, builds the object + LCM managers, then runs until you quit.
+### The control loop in words
 
-```
-run_env.py  ──LCM──►  run_controller.py  ──LCM──►  run_env.py
-    │                      ▲
-    └──────── LCM ─────────┴──►  run_visualizer.py
-```
+Imagine repeating forever, about once every millisecond:
 
-### `run_env.py`
+1. **Sense.** The env reads the current joint angles from MuJoCo and publishes them.
+2. **Think.** The controller computes a new command from those angles (here: mostly “cancel gravity”).
+3. **Act.** The env applies that command the next time it steps the physics.
 
-Owns the **MuJoCo simulation** (and later, the same interface on hardware).
+This is a **feedback loop**: the command depends on the measurement, which depends on how the robot moved under the previous command.
 
-> **NOTE — why this split exists.** Controllers and visualizers never talk to MuJoCo (or a robot SDK) directly; they only speak LCM. That is the point of the framework: **swap simulation for real hardware without rewriting control or viz.** Today you run `run_env.py`; later the same controller / visualizer configs will work against `run_hardware.py`, as long as the hardware bridge **publishes and subscribes to the exact same channels and message types** as the sim (same `joint_meas` / `joint_ctrl` names and payloads). If the wire format matches, sim and hardware are interchangeable.
+### Why not one big Python script?
 
-What it does:
+A single script that steps MuJoCo, runs OSQP, and draws OpenGL in one thread quickly becomes slow and brittle. Separating rates and responsibilities is standard on real robots (and in this course).
 
-1. `get_env(cfg)` — builds the env from `cfg.name` (e.g. `default_mujoco`).
-2. Creates an **env sub manager** (receives joint commands) and **env pub manager** (publishes joint measurements + clock).
-3. Wires their queues into the env, starts the LCM threads, then `env.start()`.
+### Zero-order hold (gentle version)
 
-Config knobs that matter for the default Flexiv demo:
-
-| Key | Meaning |
-|-----|---------|
-| `scene_xml_path` | MuJoCo scene XML |
-| `sim_freq` / `view_freq` | Physics and GUI rates |
-| `platform` | Which robot platform (Flexiv arm + Robotis hand) |
-| `sub_manager.ctrl_channel` | Where torque/PD commands arrive |
-| `pub_manager.*_joint_meas_channel` | Where `q` / `qd` are published |
-
-### `run_controller.py`
-
-Owns the **control law**. It never touches MuJoCo directly — it only reads measurements and writes commands over LCM.
-
-What it does:
-
-1. `get_controller(cfg)` — e.g. `grav_comp` → pure Pinocchio gravity compensation.
-2. Creates a **controller sub manager** (arm + hand meas + clock) and **controller pub manager** (joint ctrl).
-3. Starts LCM threads, then `controller.start()` at `ctrl_freq`.
-
-`GravCompControl` reads `q`, computes `τ_g(q)`, and publishes a `joint_ctrl` message with feedforward torque (plus light arm damping). Channel names in the controller YAML must match the env YAML exactly.
-
-### `run_visualizer.py`
-
-Owns the **Viser** browser UI. It is a pure subscriber: no commands, no clock.
-
-What it does:
-
-1. `get_vis_manager(cfg)` — for Flexiv, `FlexivArmHandVisManager`.
-2. Subscribes to the arm and hand `joint_meas` channels.
-3. Updates the URDF pose at `vis_freq` (typically 30 Hz).
-
-The collision visualizer config adds overlays (collision primitives + distance lines) by also listening to `robot_col_info` / `static_col_info`.
-
-> **Why use Viser if MuJoCo already renders?**
->
-> MuJoCo's viewer exists only in simulation — on hardware there is no MuJoCo window.
-> Viser listens to the same `joint_meas` LCM streams as the controller, so one visualizer
-> works for both sim and real experiments, and it is where debug overlays live
-> (collision geometry, distance lines, …) that are not in the MuJoCo scene viewer.
+The controller and the simulator may not wake up at the exact same instant. Between controller updates, the env **holds the last command constant**. That is called a zero-order hold. It is ordinary and expected; just remember that a slow controller means the robot “coasts” on an old command for longer.
 
 ---
 
-## Understanding communication (LCM)
+## 3. How it is implemented
 
-### Why LCM?
+You do not need to read all of this on day one. Use it as a map.
 
-[LCM](https://lcm-proj.github.io/) (Lightweight Communications and Marshalling) is a UDP multicast pub/sub bus. Env, controller, and visualizer each create their **own** `lcm.LCM()` instance and talk by **channel name**. They do not share memory or a process — the same pattern works for sim and hardware.
+| Piece | Path | What it does |
+|-------|------|----------------|
+| Env entry | `run_env.py` | Loads YAML, builds the MuJoCo env, starts LCM pubs/subs |
+| Controller entry | `run_controller.py` | Loads YAML, builds a controller by `name`, starts the loop |
+| Visualizer entry | `run_visualizer.py` | Loads YAML, opens Viser, subscribes to measurements |
+| Default controller | `controller/GravCompControl.py` | Gravity compensation used in this quick start |
+| Env config | `configs/flexiv_arm_5F_hand/env/default.yaml` | Scene file, `sim_freq`, channel names |
+| Controller config | `configs/flexiv_arm_5F_hand/controllers/grav_comp.yaml` | `ctrl_freq`, URDF, which meas channels map to which joints |
+| Viz config | `configs/visualizer/flexiv_arm_5F_hand/default.yaml` | URDF for drawing, same meas channels |
 
-To inspect live traffic while the stack is running, use **`lcm-spy`** (ships with LCM):
+**Mental model:** YAML chooses *which* classes and *which* channel strings; Python classes implement *behavior*; LCM carries *numbers* between processes.
 
-```bash
-lcm-spy
-```
-
-It lists active channels and lets you inspect message rates / fields — useful when debugging a silent loop (wrong channel name, nothing publishing, etc.).
-
-Inside each process:
-
-- A **subscriber thread** calls `lcm.handle_timeout(...)`, decodes messages, and pushes Python objects onto queues.
-- A **publisher thread** (env / controller) drains queues and publishes.
-- The **main thread** runs the sim / control / render loop and only touches queues.
-
-That keeps realtime I/O off the control loop.
-
-### Default Flexiv channels
-
-| Channel | Payload | Direction |
-|---------|---------|-----------|
-| `sw_flexiv_arm_joint_meas` | arm `q`, `qd` (7) | Env → Controller, Visualizer |
-| `sw_robotis_5F_hand_joint_meas` | hand `q`, `qd` (20) | Env → Controller, Visualizer |
-| `sw_flexiv_arm_hand_joint_ctrl` | `q_des`, `qd_des`, `τ_ff`, `kp`, `kd` (27) | Controller → Env |
-| `sim_clock` | simulation time | Env → Controller |
-
-Closed loop:
-
-1. Env steps MuJoCo and publishes joint measurements.
-2. Controller reads measurements, computes torques, publishes `joint_ctrl`.
-3. Env applies the command on the next tick.
-4. Visualizer mirrors the published `q` in the browser.
-
-### Collision extras
-
-When you use the collision env / `col_aware_grav_comp` / collision visualizer, the env also publishes:
-
-| Channel | Meaning |
-|---------|---------|
-| `sw_flexiv_arm_hand_robot_col_info` | Per-link collision primitives (link-local) |
-| `sw_flexiv_arm_hand_static_col_info` | Floor / walls (world frame) |
-
-The collision-aware controller uses these for FCL distance checks; the collision visualizer can overlay the same geometry and nearest-point lines.
-
-### Matching configs
-
-Channel strings are just names — if they disagree across YAMLs, nothing connects and nothing crashes loudly. When you change a channel in the env config, update the controller and visualizer configs to match.
-
-## Real hardware
-
-In simulation, MuJoCo can supply almost everything from one process: joint angles, camera RGB, ground-truth object poses, and more. So for sim studies, `run_env.py` can do a lot of jobs at once.
-
-On real hardware those roles split across processes — for example `run_hardware.py` (robot bridge), `run_sensor.py` (cameras / force / etc.), `run_perception.py` (estimates that replace sim ground truth). Each process should **publish and subscribe over LCM with the same channel names and message payloads as the sim**. Controllers and visualizers then stay unchanged: they only care that the wire format matches, not whether the data came from MuJoCo or the lab.
-
-For collision-aware control in a real experiment you still need to publish `robot_col_info` / `static_col_info` for the controller. You can keep running `run_env.py` for that role — just set `vis_mode: vis_off` so MuJoCo does not open a viewer.
+When you are comfortable starting and stopping this stack, continue to [02](02_understanding_mujoco_simulator.md) (what MuJoCo is doing) and [03](03_grav_comp.md) (your first real control law).

@@ -25,4 +25,9 @@ def get_sim_platform(
 
         return SimFlexivArm5FHand(**cfg)
 
+    if name == "robotis_5f_hand":
+        from robot_platform.sim.robotis_5F_hand.SimRobotis5FHand import SimRobotis5FHand
+
+        return SimRobotis5FHand(**cfg)
+
     raise ValueError(f"Unknown platform name: {name}")

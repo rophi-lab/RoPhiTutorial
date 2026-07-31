@@ -1,88 +1,106 @@
-# Inverse Kinematics + Reach
+# Inverse kinematics + reach
 
-Arm+hand: **sample a palm SE(3) goal and hand configuration**, **solve arm IK**, then **regulate to `q*` with joint-space impedance**. No path planner.
+Earlier we chased a **moving** fingertip target with a velocity QP ([06](06_inverse_kinematics_quadratic_program.md)), and we tracked a **joint-space path** with PD ([07](07_computed_torque_control.md)). Here we do something in between:
 
-## Pipeline (keys)
+1. Sample a desired **palm pose** (and a hand posture),
+2. Solve **arm-only** inverse kinematics offline with a collision check,
+3. Gently regulate the whole robot to that joint solution $q^\star$.
 
-| Key | Step | What you see in Viser |
-|-----|------|------------------------|
-| **`1`** | Sample palm pose `T_des` + hand joints `q_hand` | Purple **frame** at `T_des` + **floating palm + fingers** (no arm). |
-| **`2`** | Solve IK for arm joints; check collisions | Floating hand clears; full-arm ghost at **`q*`**. Rejected if in collision. |
-| **`3`** | Joint-space impedance about `q*` | Robot pulls toward the purple ghost (no yellow traj). |
+Think of it as: “decide where the palm should sit, find a joint pose that realizes it, then spring toward that pose.”
 
-Also: `g` grav-comp, `h` hold current, `p` pause, `q` quit.
+---
 
-Order is **1 → 2 → 3**. Pressing `1` clears later stages.
-
-## Run
+## 1. Run & LCM communication
 
 ```bash
-# terminal 1 — collision environment (walls)
 python run_env.py --config configs/flexiv_arm_5F_hand/env/collision.yaml
 
-# terminal 2
 python run_controller.py --config configs/flexiv_arm_5F_hand/controllers/ik_reach.yaml
 
-# terminal 3
 python run_visualizer.py --config configs/visualizer/flexiv_arm_5F_hand/ik_reach.yaml
 ```
 
-Focus the controller terminal when pressing keys.
+| Key | Action |
+|-----|--------|
+| `1` | Sample a new target palm pose + hand joints |
+| `2` | Solve IK; accept only if FCL says the pose is collision-free |
+| `3` | Regulate to the accepted $q^\star$ |
+| `g` / `h` | Gravity compensation / hold |
+| `p` / `q` | Pause / quit |
 
-## Inverse kinematics (step 2)
+### Suggested workflow
 
-We use **closed-loop IK (CLIK)** in Pinocchio on the `palm` frame. Hand joints stay fixed; only arm joints are free.
+Press `1` until Viser shows a palm frame you like, then `2`. If IK fails or the solution collides, try `1` again. When you have a green (accepted) solution, press `3` and watch the arm pull toward it.
 
-### Residual (body twist)
+### What you should observe
+
+Unlike [07](07_computed_torque_control.md), there is **no RRT path**. After `3`, the robot goes **straight in joint space** toward $q^\star$. That is simpler — and also why we only accept collision-free solutions: the path itself is not re-checked every step.
+
+### LCM
+
+| Channel | Direction | Role |
+|---------|-----------|------|
+| Arm / hand measurements | env → ctrl | Current $q,\dot q$ |
+| Robot / static ColInfo | env → ctrl | FCL collision shapes |
+| `sw_flexiv_arm_hand_joint_ctrl` | ctrl → env | Regulation or grav-comp |
+| `sw_ik_reach_palm_pose` | ctrl → viz | Desired palm SE(3) for drawing |
+| `sw_p2p_*` | ctrl ↔ viz | Status / gains (shared naming with the P2P visualizer) |
+
+---
+
+## 2. Ideas
+
+### What “SE(3) palm target” means
+
+A rigid pose is an element of $\mathrm{SE}(3)$: position plus orientation. Call the desired palm pose $T_{\mathrm{des}}$. Forward kinematics from the arm joints gives the current palm pose $T(q)$.
+
+We measure the error **on the group**, not with naive Euler angles:
 
 $$
-\xi = \log\bigl(T(q)^{-1}\, T_{\mathrm{des}}\bigr) \in \mathfrak{se}(3)
+\xi = \log\bigl(T(q)^{-1} T_{\mathrm{des}}\bigr)^{\vee}
+   = \begin{pmatrix} \nu \\ \omega \end{pmatrix}.
 $$
 
-with $\log$ the Pinocchio `log6` map (position + rotation error as a 6-vector).
+Here $\nu$ is a translation-like residual and $\omega$ a rotation-like residual in the palm’s body frame. When $\xi\approx 0$, the palm is where we want it.
 
-### Joint update
+### Closed-loop inverse kinematics (CLIK)
 
-$$
-\Delta q = J^{+}\,\xi,\qquad
-J^{+} = J^{\mathsf T}\bigl(J J^{\mathsf T} + \lambda^{2} I\bigr)^{-1}
-$$
-
-$J$ is the **LOCAL** frame Jacobian (matches body `log6`). Iterate until $\|\xi\| < \varepsilon$ or the iteration limit. Then clamp joints to limits and check self/environment collisions with FCL.
-
-## Sampling (step 1)
-
-- **Translation:** uniform in `pose_pos_min` / `pose_pos_max`.
-- **Rotation:** seed from current palm FK, then random SO(3) noise (`pose_rot_noise_rad`).
-- **Hand:** uniform in joint limits (with margin) on `hand_sample_joint_idx`.
-
-No IK or collision check until step `2`.
-
-## Joint impedance (step 3)
-
-No trajectory. Key `3` sets the hold / impedance setpoint to the IK solution `q*` and regulates with the plant law
+We only move the **arm** joints. Each iteration takes a damped least-squares step with the LOCAL (body) Jacobian $J$ that matches the `log6` chart:
 
 $$
-\tau = K_p(q^\star - q) - K_d\,\dot q + g(q),
+\Delta q = J^{+}\xi,
+\qquad
+J^{+} = J^{\top}(JJ^{\top}+\lambda^{2}I)^{-1}.
 $$
 
-i.e. joint-space impedance with $K=K_p$, $D=K_d$ (gains from YAML `kp` / `kd`, same critical-damping recipe as [07](07_computed_torque_control.md) / [08](08_impedance_control.md)).
+- $\lambda$ (damping) keeps the step calm near singularities.
+- Clamp joints to limits after each step.
+- Stop when $\|\xi\|<\varepsilon_{\mathrm{IK}}$ or you hit the iteration budget.
 
-There is no collision avoidance while moving — if the straight pull hits a wall, resample (`1`) or solve a free IK goal (`2`).
+The hand joints in $q^\star$ come from the sample (step `1`); they are not solved by CLIK.
 
-## Config checklist
+### Collision acceptance
 
-`configs/flexiv_arm_5F_hand/controllers/ik_reach.yaml`:
+A mathematically perfect IK solution can still put a forearm through a wall. After CLIK converges, run FCL self- and environment-collision checks at $q^\star$. Reject and resample if anything overlaps.
 
-- `controller.name: ik_reach`
-- `task_frame: palm`, `pose_pos_*`, `hand_sample_joint_idx`, `ik_*`
-- `kp` / `kd` (joint impedance / hold gains)
-- `pub_manager.joint_ctrl_channel` / `joint_target_channel` / `palm_pose_channel`
+### Regulation (the “go there” spring)
 
-Visualizer `configs/visualizer/flexiv_arm_5F_hand/ik_reach.yaml` must list the same LCM channels (including `palm_pose_channel`).
+Once $q^\star$ is accepted:
 
-## Relation to `ik_qp` / min-jerk P2P
+$$
+\tau = K_p(q^\star - q) - K_d\dot q + g(q).
+$$
 
-- [`ik_qp.yaml`](../configs/flexiv_arm_5F_hand/controllers/ik_qp.yaml) — continuous QP SE(3) tracking with mink.
-- [07](07_computed_torque_control.md) — collision-free RRT + min-jerk **path** then PD track.
-- This tutorial — discrete pose sample → IK → **direct** joint impedance to `q*`.
+This is joint impedance toward a fixed goal — the same spirit as [08](08_impedance_control.md), but with a freshly computed setpoint instead of a fixed home.
+
+---
+
+## 3. How it is implemented
+
+| Piece | Role |
+|-------|------|
+| `controller/IKReachControl.py` | FSM: sample → CLIK → regulate |
+| Pinocchio FK / Jacobian / `log6` | Pose residual and $J^{+}$ |
+| `configs/.../ik_reach.yaml` | `task_frame`, `ik_tol`, `ik_damping`, pose sample box, gains, `col_pairs` |
+
+**Learning tip:** if regulation looks too aggressive, lower $K_p$ (or raise $K_d$) from the GUI before blaming IK. If IK often fails near walls, shrink the pose sample box in the YAML.

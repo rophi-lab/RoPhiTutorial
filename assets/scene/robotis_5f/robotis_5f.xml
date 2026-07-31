@@ -1,0 +1,319 @@
+<mujoco model="rh_5_right">
+  <compiler angle="radian" autolimits="true"/>
+
+  <option timestep="0.001" integrator="Euler" iterations="5" ls_iterations="8">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <default class="main">
+    <joint armature="0"/>
+    <default class="AK606">
+        <joint armature="0.011087" damping="0.01" frictionloss="0.0"/>
+    </default>
+    <default class="U12">
+      <joint armature="0.0198648" damping="0.01" frictionloss="0.0"/>
+    </default>
+    <default class="U10">
+      <joint armature="0.00612" damping="0.01" frictionloss="0.0"/>
+    </default>
+    <default class="XM335">
+      <joint armature="0.002418" damping="0.001" frictionloss="0.01"/>
+    </default>
+    <!-- <default class="XM335">
+      <joint armature="0.002418" damping="0.01" frictionloss="0.05"/>
+    </default> -->
+    <!-- <default class="contact">
+      <geom conaffinity="1" contype="1" condim="6" priority="1"
+            friction="1.0 0.02 0.0001" solimp="0.95 0.99 0.001 0.5 2" solref="0.005 1" />
+    </default> -->
+    <default class="contact">
+      <geom conaffinity="1" contype="1" condim="3" priority="1"
+            friction="0.7 0.05 0.0002" solimp="0.95 0.99 0.001 0.5 2" solref="0.005 1" />
+    </default>
+    <default class="no_contact">
+      <geom conaffinity="0" contype="0" priority="0"/>
+    </default>
+  </default>
+
+  <asset>
+    <texture name="blue_grid" type="2d" builtin="checker"
+             rgb1="0.02 0.14 0.44" rgb2="0.27 0.55 1"
+             width="300" height="300" mark="edge" markrgb="1 1 1"/>
+    <material name="blue_grid" texture="blue_grid"
+              texrepeat="1 1" texuniform="true" reflectance="0.2"/>
+
+    <texture name="grey_grid" type="2d" builtin="checker"
+             rgb1="0.26 0.26 0.26" rgb2="0.6 0.6 0.6"
+             width="300" height="300" mark="edge" markrgb="1 1 1"/>
+    <material name="grey_grid" texture="grey_grid"
+              texrepeat="1 1" texuniform="true" reflectance="0.2"/>
+
+    <texture type="skybox" builtin="gradient"
+             rgb1="0.3 0.5 0.7" rgb2="0 0 0"
+             width="512" height="3072"/>
+
+    <texture name="groundplane" type="2d" builtin="checker"
+             rgb1="0.2 0.3 0.4" rgb2="0.1 0.2 0.3"
+             mark="edge" markrgb="0.8 0.8 0.8"
+             width="300" height="300"/>
+    <material name="groundplane" texture="groundplane"
+              texuniform="true" texrepeat="5 5" reflectance="0.2"/>
+    <mesh name="rh_5_base_unit" content_type="model/stl" file="meshes/rh_5_right/rh_5_base_unit.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rh_5_thumb_mcp" content_type="model/stl" file="meshes/rh_5_right/rh_5_thumb_mcp.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rh_5_thumb_mcp2" content_type="model/stl" file="meshes/rh_5_right/rh_5_thumb_mcp2.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rh_5_thumb_ip" content_type="model/stl" file="meshes/rh_5_right/rh_5_thumb_ip.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rh_5_thumb_tip" content_type="model/stl" file="meshes/rh_5_right/rh_5_thumb_tip.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rh_5_finger_mcp" content_type="model/stl" file="meshes/rh_5_right/rh_5_finger_mcp.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rh_5_finger_pip" content_type="model/stl" file="meshes/rh_5_right/rh_5_finger_pip.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rh_5_finger_dip" content_type="model/stl" file="meshes/rh_5_right/rh_5_finger_dip.stl" scale="0.001 0.001 0.001"/>
+    <mesh name="rh_5_finger_tip" content_type="model/stl" file="meshes/rh_5_right/rh_5_finger_tip.stl" scale="0.001 0.001 0.001"/>
+  </asset>
+
+  <default>
+    <default class="rh_5_right">
+      <geom friction="0.2" solref="0.02 1.5" solimp="0.9 0.99 0.001" conaffinity="3"/>
+      <default class="visual">
+        <geom group="2" type="mesh" contype="0" conaffinity="0" density="0"/>
+      </default>
+      <default class="tip_collision">
+        <geom type="capsule" fromto="0 0 0 0 0.0 0.032" friction="0.2 0.05 0.0002" size="0.012" group="3" conaffinity="3"/>
+      </default>
+      <default class="link_collision">
+        <geom type="capsule" fromto="0 0 0 0 0.0 0.025" size="0.012" group="3" conaffinity="3" friction="0.2 0.05 0.0002"/>
+      </default>
+      <position kp="3.0" inheritrange="1"/>
+      <!-- armature = rotor inertia * gear ratio^2 = 1.7 * 1e-8 * 288*288 = 0.00149376 -->
+      <!-- max torque = 1.0 Nm (rated torque) -->
+      <!-- frictionloss = rough guess, small ish value -->
+      <joint damping="0.2" armature="0.00149376" actuatorfrcrange="-0.2 0.2" frictionloss="0.02"/>
+    </default>
+  </default>
+
+  <!-- avoid consecutive links from contacting each other (because they penetrate each other)-->
+  <contact>
+    <exclude body1="palm" body2="finger_r_link_1_thumb1"/>
+    <exclude body1="palm" body2="finger_r_link_1_thumb2"/>
+    <exclude body1="palm" body2="finger_r_link_1_thumb3"/>
+    <exclude body1="palm" body2="finger_r_link_2_index1"/>
+    <exclude body1="palm" body2="finger_r_link_2_index2"/>
+    <exclude body1="palm" body2="finger_r_link_2_index3"/>
+    <exclude body1="palm" body2="finger_r_link_3_middle1"/>
+    <exclude body1="palm" body2="finger_r_link_3_middle2"/>
+    <exclude body1="palm" body2="finger_r_link_3_middle3"/>
+    <exclude body1="palm" body2="finger_r_link_4_ring1"/>
+    <exclude body1="palm" body2="finger_r_link_4_ring2"/>
+    <exclude body1="palm" body2="finger_r_link_4_ring3"/>
+    <exclude body1="palm" body2="finger_r_link_5_little1"/>
+    <exclude body1="palm" body2="finger_r_link_5_little2"/>
+    <exclude body1="palm" body2="finger_r_link_5_little3"/>
+
+    <exclude body1="finger_r_link_1_thumb1" body2="finger_r_link_1_thumb2"/>
+    <exclude body1="finger_r_link_1_thumb2" body2="finger_r_link_1_thumb3"/>
+    <exclude body1="finger_r_link_1_thumb3" body2="finger_r_link_1_thumb4"/>
+    <exclude body1="finger_r_link_2_index1" body2="finger_r_link_2_index2"/>
+    <exclude body1="finger_r_link_2_index2" body2="finger_r_link_2_index3"/>
+    <exclude body1="finger_r_link_2_index3" body2="finger_r_link_2_index4"/>
+    <exclude body1="finger_r_link_3_middle1" body2="finger_r_link_3_middle2"/>
+    <exclude body1="finger_r_link_3_middle2" body2="finger_r_link_3_middle3"/>
+    <exclude body1="finger_r_link_3_middle3" body2="finger_r_link_3_middle4"/>
+    <exclude body1="finger_r_link_3_middle4" body2="finger_r_link_4_ring1"/>
+    <exclude body1="finger_r_link_4_ring1" body2="finger_r_link_4_ring2"/>
+    <exclude body1="finger_r_link_4_ring2" body2="finger_r_link_4_ring3"/>
+    <exclude body1="finger_r_link_4_ring3" body2="finger_r_link_4_ring4"/>
+    <exclude body1="finger_r_link_5_little1" body2="finger_r_link_5_little2"/>
+    <exclude body1="finger_r_link_5_little2" body2="finger_r_link_5_little3"/>
+    <exclude body1="finger_r_link_5_little3" body2="finger_r_link_5_little4"/>
+  </contact>
+
+  <worldbody>
+    <light pos="0 -0.1 0.5" dir="0 0.2 -1"
+           diffuse="0.7 0.7 0.7" specular="0.3 0.3 0.3"
+           directional="true" castshadow="true"/>
+
+    <!-- <geom name="floor" type="plane" size="0 0 0.05" pos="0 0 -0.2"
+          group="0" material="groundplane"
+          friction="0.5 0.02 0.02"/> -->
+
+    <!-- Palm -->
+    <body name="palm" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0">
+      <inertial pos="-1.6731925e-03 1.2908873e-03 6.0855215e-02" quat="1.0 0.0 0.0 0.0" mass="3.5306225e-01" diaginertia="0.00059371826 0.00038516622 0.00031560646" />
+      <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_base_unit" class="contact" />
+
+      <!-- Thumb -->
+      <body name="finger_r_link_1_thumb1" pos="0.0145 0.02624 0.05394" quat="0.9659257972493452 -0.25881915348021844 0.0 0.0">
+        <joint name="finger_r_joint_1_thumb1" type="hinge" ref="0.0" class="XM335" range="-2.35159 0.05836" axis="0 0 1" />
+        <inertial pos="3.6173493e-04 1.3999343e-02 -3.5920702e-04" quat="1.0 0.0 0.0 0.0" mass="1.1760611e-02" diaginertia="1.3023455e-06 1.0555954e-06 1.3024281e-06" />
+        <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_thumb_mcp" class="contact" />
+        <body name="finger_r_link_1_thumb2" pos="0.0 0.028 0.0" quat="0.9659257972493452 0.25881915348021844 0.0 0.0">
+          <joint name="finger_r_joint_1_thumb2" type="hinge" ref="0.0" class="XM335" range="-2.16441 0.07973" axis="1 0 0" />
+          <inertial pos="-1.1716560e-05 1.3386946e-02 1.2376406e-02" quat="1.0 0.0 0.0 0.0" mass="7.2236971e-02" diaginertia="2.018425e-05 1.753582e-05 8.0683218e-06" />
+          <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_thumb_mcp2" class="contact" />
+          <body name="finger_r_link_1_thumb3" pos="0.0 0.0145 0.035" quat="1.0 0.0 0.0 0.0">
+            <joint name="finger_r_joint_1_thumb3" type="hinge" ref="0.0" class="XM335" range="-1.62749 1.58147" axis="0 1 0" />
+            <inertial pos="-4.0805550e-06 -1.0146203e-04 2.4156485e-02" quat="1.0 0.0 0.0 0.0" mass="3.4689700e-02" diaginertia="5.4029785e-06 5.0370173e-06 2.2580703e-06" />
+            <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_thumb_ip" class="contact" />
+            <body name="finger_r_link_1_thumb4" pos="0.0 0.0 0.0355" quat="1.0 0.0 0.0 0.0">
+              <joint name="finger_r_joint_1_thumb4" type="hinge" ref="0.0" class="XM335" range="-1.39283 1.82852" axis="0 1 0" />
+              <inertial pos="7.1025148e-04 -1.4717103e-04 1.8098640e-02" quat="1.0 0.0 0.0 0.0" mass="1.3637201e-02" diaginertia="2.2351803e-06 2.0188065e-06 1.0814083e-06" />
+              <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_thumb_tip" class="contact" />
+            </body>
+          </body>
+        </body>
+      </body>
+      
+      <!-- Index -->
+      <body name="finger_r_link_2_index1" pos="-0.0015 0.03608 0.09575" quat="1.0 0.0 0.0 0.0">
+        <joint name="finger_r_joint_2_index1" type="hinge" ref="0.0" class="XM335" range="-1.59229 0.22286" axis="1 0 0" />
+        <inertial pos="5.193401000e-03 -1.816308100e-05 2.111550700e-02" quat="1.0 0.0 0.0 0.0" mass="3.880441100e-02" diaginertia="3.5249932e-06 5.7921575e-06 4.7126798e-06" />
+        <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_mcp" class="contact" />
+        <body name="finger_r_link_2_index2" pos="0.0165 0.0 0.0235" quat="1.0 0.0 0.0 0.0">
+          <joint name="finger_r_joint_2_index2" type="hinge" ref="0.0" class="XM335" range="-0.01863 2.32012" axis="0 1 0" />
+          <inertial pos="4.080555000e-06 1.014620300e-04 2.415648500e-02" quat="1.0 0.0 0.0 0.0" mass="3.468970000e-02" diaginertia="5.4029785e-06 5.0370173e-06 2.2580703e-06" />
+          <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_pip" class="contact" />
+          <body name="finger_r_link_2_index3" pos="0.0 0.0 0.0355" quat="1.0 0.0 0.0 0.0">
+            <joint name="finger_r_joint_2_index3" type="hinge" ref="0.0" class="XM335" range="-1.53515 1.65880" axis="0 1 0" />
+            <inertial pos="4.080555000e-06 1.014620300e-04 2.415648500e-02" quat="1.0 0.0 0.0 0.0" mass="3.468970000e-02" diaginertia="5.4029785e-06 5.0370173e-06 2.2580703e-06" />
+            <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_dip" class="contact" />
+            <body name="finger_r_link_2_index4" pos="0.0 0.0 0.0355" quat="1.0 0.0 0.0 0.0">
+              <joint name="finger_r_joint_2_index4" type="hinge" ref="0.0" class="XM335" range="-1.58482 1.62659" axis="0 1 0" />
+              <inertial pos="7.102508500e-04 4.723840800e-04 1.809864000e-02" quat="1.0 0.0 0.0 0.0" mass="1.363720100e-02" diaginertia="2.2324326e-06 2.0188065e-06 1.0786606e-06" />
+              <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_tip" class="contact" />
+            </body>
+          </body>
+        </body>
+      </body>
+      
+      <!-- Middle -->
+      <body name="finger_r_link_3_middle1" pos="-0.0015 0.00908 0.10353" quat="1.0 0.0 0.0 0.0">
+        <joint name="finger_r_joint_3_middle1" type="hinge" ref="0.0" class="XM335" range="-0.93308 0.70753" axis="1 0 0" />
+        <inertial pos="5.193401000e-03 -1.816308100e-05 2.111550700e-02" quat="1.0 0.0 0.0 0.0" mass="3.880441100e-02" diaginertia="3.5249932e-06 5.7921575e-06 4.7126798e-06" />
+        <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_mcp" class="contact" />
+        <body name="finger_r_link_3_middle2" pos="0.0165 0.0 0.0235" quat="1.0 0.0 0.0 0.0">
+          <joint name="finger_r_joint_3_middle2" type="hinge" ref="0.0" class="XM335" range="0.00592 2.29230" axis="0 1 0" />
+          <inertial pos="4.080555000e-06 1.014620300e-04 2.415648500e-02" quat="1.0 0.0 0.0 0.0" mass="3.468970000e-02" diaginertia="5.4029785e-06 5.0370173e-06 2.2580703e-06" />
+          <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_pip" class="contact" />
+          <body name="finger_r_link_3_middle3" pos="0.0 0.0 0.0355" quat="1.0 0.0 0.0 0.0">
+            <joint name="finger_r_joint_3_middle3" type="hinge" ref="0.0" class="XM335" range="-1.59402 1.61738" axis="0 1 0" />
+            <inertial pos="4.080555000e-06 1.014620300e-04 2.415648500e-02" quat="1.0 0.0 0.0 0.0" mass="3.468970000e-02" diaginertia="5.4029785e-06 5.0370173e-06 2.2580703e-06" />
+            <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_dip" class="contact" />
+            <body name="finger_r_link_3_middle4" pos="0.0 0.0 0.0355" quat="1.0 0.0 0.0 0.0">
+              <joint name="finger_r_joint_3_middle4" type="hinge" ref="0.0" class="XM335" range="-1.47130 1.74010" axis="0 1 0" />
+              <inertial pos="7.102508500e-04 4.723840800e-04 1.809864000e-02" quat="1.0 0.0 0.0 0.0" mass="1.363720100e-02" diaginertia="2.2324326e-06 2.0188065e-06 1.0786606e-06" />
+              <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_tip" class="contact" />
+            </body>
+          </body>
+        </body>
+      </body>
+      
+      <!-- Ring -->
+      <body name="finger_r_link_4_ring1" pos="-0.0015 -0.01792 0.09775" quat="1.0 0.0 0.0 0.0">
+        <joint name="finger_r_joint_4_ring1" type="hinge" ref="0.0" class="XM335" range="-0.41927 1.34351" axis="1 0 0" />
+        <inertial pos="5.193401000e-03 -1.816308100e-05 2.111550700e-02" quat="1.0 0.0 0.0 0.0" mass="3.880441100e-02" diaginertia="3.5249932e-06 5.7921575e-06 4.7126798e-06" />
+        <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_mcp" class="contact" />
+        <body name="finger_r_link_4_ring2" pos="0.0165 0.0 0.0235" quat="1.0 0.0 0.0 0.0">
+          <joint name="finger_r_joint_4_ring2" type="hinge" ref="0.0" class="XM335" range="-0.00022 2.32107" axis="0 1 0" />
+          <inertial pos="4.080555000e-06 1.014620300e-04 2.415648500e-02" quat="1.0 0.0 0.0 0.0" mass="3.468970000e-02" diaginertia="5.4029785e-06 5.0370173e-06 2.2580703e-06" />
+          <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_pip" class="contact" />
+          <body name="finger_r_link_4_ring3" pos="0.0 0.0 0.0355" quat="1.0 0.0 0.0 0.0">
+            <joint name="finger_r_joint_4_ring3" type="hinge" ref="0.0" class="XM335" range="-1.59096 1.62045" axis="0 1 0" />
+            <inertial pos="4.080555000e-06 1.014620300e-04 2.415648500e-02" quat="1.0 0.0 0.0 0.0" mass="3.468970000e-02" diaginertia="5.4029785e-06 5.0370173e-06 2.2580703e-06" />
+            <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_dip" class="contact" />
+            <body name="finger_r_link_4_ring4" pos="0.0 0.0 0.0355" quat="1.0 0.0 0.0 0.0">
+              <joint name="finger_r_joint_4_ring4" type="hinge" ref="0.0" class="XM335" range="-1.45596 1.75544" axis="0 1 0" />
+              <inertial pos="7.102508500e-04 4.723840800e-04 1.809864000e-02" quat="1.0 0.0 0.0 0.0" mass="1.363720100e-02" diaginertia="2.2324326e-06 2.0188065e-06 1.0786606e-06" />
+              <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_tip" class="contact" />
+            </body>
+          </body>
+        </body>
+      </body>
+      
+      <!-- Pinky -->
+      <body name="finger_r_link_5_little1" pos="-0.0015 -0.04492 0.07875" quat="1.0 0.0 0.0 0.0">
+        <joint name="finger_r_joint_5_little1" type="hinge" ref="0.0" class="XM335" range="-0.28118 1.97030" axis="1 0 0" />
+        <inertial pos="5.193401000e-03 -1.816308100e-05 2.111550700e-02" quat="1.0 0.0 0.0 0.0" mass="3.880441100e-02" diaginertia="3.5249932e-06 5.7921575e-06 4.7126798e-06" />
+        <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_mcp" class="contact" />
+        <body name="finger_r_link_5_little2" pos="0.0165 0.0 0.0235" quat="1.0 0.0 0.0 0.0">
+          <joint name="finger_r_joint_5_little2" type="hinge" ref="0.0" class="XM335" range="-0.03243 2.35867" axis="0 1 0" />
+          <inertial pos="4.080555000e-06 1.014620300e-04 2.415648500e-02" quat="1.0 0.0 0.0 0.0" mass="3.468970000e-02" diaginertia="5.4029785e-06 5.0370173e-06 2.2580703e-06" />
+          <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_pip" class="contact" />
+          <body name="finger_r_link_5_little3" pos="0.0 0.0 0.0355" quat="1.0 0.0 0.0 0.0">
+            <joint name="finger_r_joint_5_little3" type="hinge" ref="0.0" class="XM335" range="-1.57868 1.63272" axis="0 1 0" />
+            <inertial pos="4.080555000e-06 1.014620300e-04 2.415648500e-02" quat="1.0 0.0 0.0 0.0" mass="3.468970000e-02" diaginertia="5.4029785e-06 5.0370173e-06 2.2580703e-06" />
+            <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_dip" class="contact" />
+            <body name="finger_r_link_5_little4" pos="0.0 0.0 0.0355" quat="1.0 0.0 0.0 0.0">
+              <joint name="finger_r_joint_5_little4" type="hinge" ref="0.0" class="XM335" range="-1.44983 1.76158" axis="0 1 0" />
+              <inertial pos="7.102508500e-04 4.723840800e-04 1.809864000e-02" quat="1.0 0.0 0.0 0.0" mass="1.363720100e-02" diaginertia="2.2324326e-06 2.0188065e-06 1.0786606e-06" />
+              <geom pos="0 0 0" quat="1.0 0.0 0.0 0.0" type="mesh" mesh="rh_5_finger_tip" class="contact" />
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- <actuator>
+    <position name="slider_z_act" joint="slider_z" kp="500"/>
+    <position name="finger_r_joint_1_thumb1_act" joint="finger_r_joint_1_thumb1"/>
+    <position name="finger_r_joint_1_thumb2_act" joint="finger_r_joint_1_thumb2"/>
+    <position name="finger_r_joint_1_thumb3_act" joint="finger_r_joint_1_thumb3"/>
+    <position name="finger_r_joint_1_thumb4_act" joint="finger_r_joint_1_thumb4"/>
+    <position name="finger_r_joint_2_index1_act" joint="finger_r_joint_2_index1"/>
+    <position name="finger_r_joint_2_index2_act" joint="finger_r_joint_2_index2"/>
+    <position name="finger_r_joint_2_index3_act" joint="finger_r_joint_2_index3"/>
+    <position name="finger_r_joint_2_index4_act" joint="finger_r_joint_2_index4"/>
+    <position name="finger_r_joint_3_middle1_act" joint="finger_r_joint_3_middle1"/>
+    <position name="finger_r_joint_3_middle2_act" joint="finger_r_joint_3_middle2"/>
+    <position name="finger_r_joint_3_middle3_act" joint="finger_r_joint_3_middle3"/>
+    <position name="finger_r_joint_3_middle4_act" joint="finger_r_joint_3_middle4"/>
+    <position name="finger_r_joint_4_ring1_act" joint="finger_r_joint_4_ring1"/>
+    <position name="finger_r_joint_4_ring2_act" joint="finger_r_joint_4_ring2"/>
+    <position name="finger_r_joint_4_ring3_act" joint="finger_r_joint_4_ring3"/>
+    <position name="finger_r_joint_4_ring4_act" joint="finger_r_joint_4_ring4"/>
+    <position name="finger_r_joint_5_little1_act" joint="finger_r_joint_5_little1"/>
+    <position name="finger_r_joint_5_little2_act" joint="finger_r_joint_5_little2"/>
+    <position name="finger_r_joint_5_little3_act" joint="finger_r_joint_5_little3"/>
+    <position name="finger_r_joint_5_little4_act" joint="finger_r_joint_5_little4"/>
+  </actuator> -->
+  <actuator>
+    <motor name="finger_r_joint_1_thumb1_act" joint="finger_r_joint_1_thumb1"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_1_thumb2_act" joint="finger_r_joint_1_thumb2"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_1_thumb3_act" joint="finger_r_joint_1_thumb3"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_1_thumb4_act" joint="finger_r_joint_1_thumb4"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_2_index1_act" joint="finger_r_joint_2_index1"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_2_index2_act" joint="finger_r_joint_2_index2"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_2_index3_act" joint="finger_r_joint_2_index3"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_2_index4_act" joint="finger_r_joint_2_index4"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_3_middle1_act" joint="finger_r_joint_3_middle1"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_3_middle2_act" joint="finger_r_joint_3_middle2"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_3_middle3_act" joint="finger_r_joint_3_middle3"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_3_middle4_act" joint="finger_r_joint_3_middle4"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_4_ring1_act" joint="finger_r_joint_4_ring1"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_4_ring2_act" joint="finger_r_joint_4_ring2"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_4_ring3_act" joint="finger_r_joint_4_ring3"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_4_ring4_act" joint="finger_r_joint_4_ring4"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_5_little1_act" joint="finger_r_joint_5_little1"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_5_little2_act" joint="finger_r_joint_5_little2"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_5_little3_act" joint="finger_r_joint_5_little3"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <motor name="finger_r_joint_5_little4_act" joint="finger_r_joint_5_little4"  gear="1" ctrllimited="true" ctrlrange="-0.2 0.2"/>
+    <!-- <motor name="finger_r_joint_1_thumb1_act" joint="finger_r_joint_1_thumb1"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_1_thumb2_act" joint="finger_r_joint_1_thumb2"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_1_thumb3_act" joint="finger_r_joint_1_thumb3"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_1_thumb4_act" joint="finger_r_joint_1_thumb4"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_2_index1_act" joint="finger_r_joint_2_index1"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_2_index2_act" joint="finger_r_joint_2_index2"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_2_index3_act" joint="finger_r_joint_2_index3"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_2_index4_act" joint="finger_r_joint_2_index4"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_3_middle1_act" joint="finger_r_joint_3_middle1"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_3_middle2_act" joint="finger_r_joint_3_middle2"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_3_middle3_act" joint="finger_r_joint_3_middle3"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_3_middle4_act" joint="finger_r_joint_3_middle4"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_4_ring1_act" joint="finger_r_joint_4_ring1"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_4_ring2_act" joint="finger_r_joint_4_ring2"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_4_ring3_act" joint="finger_r_joint_4_ring3"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_4_ring4_act" joint="finger_r_joint_4_ring4"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_5_little1_act" joint="finger_r_joint_5_little1"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_5_little2_act" joint="finger_r_joint_5_little2"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_5_little3_act" joint="finger_r_joint_5_little3"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/>
+    <motor name="finger_r_joint_5_little4_act" joint="finger_r_joint_5_little4"  gear="1" ctrllimited="true" ctrlrange="-0.5 0.5"/> -->
+  </actuator>
+</mujoco>

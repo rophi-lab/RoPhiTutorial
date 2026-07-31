@@ -1,0 +1,70 @@
+name: mj_meshes_grasp_eval
+model: robotis_5f
+scene_xml_path: assets/scene/robotis_5f/robotis_5f.xml
+
+obj_path: assets/object_mesh/green_bowl
+object_density: 500
+texture_img_size: [512, 512]
+obj_mesh2init_quat: [0.382683, -0.923880, 0.0, 0.0]
+obj_name: green_bowl
+mesh_name: predefined_obj
+grasp_idx: 0
+gravity_off_on_start: true
+
+scene_params:
+  workspace_2d: [[-0.6, -0.3], [-0.6, -0.3]]
+  min_n_objects: 1
+  max_n_objects: 1
+
+env_mode: sim_real_time
+vis_mode: vis_on
+
+sim_steps_per_control: 1
+sim_freq: 1000
+view_freq: 30
+
+viewer_cam:
+  distance: 0.6
+  elevation: -30
+  azimuth: 225
+  lookat: [0.0, 0.0, 0.1]
+
+viewer_vis:
+  contact_point: false
+  contact_force: false
+  contact_split: false
+
+perturbation:
+  sigma_pos: 0.00
+  sigma_rot: 2.0
+  apply_steps: 1000
+  Kp_scale: 1000.0
+  Kr_scale: 1000.0
+  max_force: 10
+  max_torque: 1
+
+platform:
+  name: robotis_5f_hand
+  default_q_values: [
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+  ]
+  joint_meas_channel: sim_hand_joint_meas
+  joint_meas_freq: 1000
+
+sub_manager:
+  name: joint_named_vec_list
+  ctrl_channel: sim_joint_ctrl
+  named_vec_list_channel: sim_contact_forces_in_world
+  num_joints: 20
+  max_sub_freq: 2000
+
+pub_manager:
+  name: joint_two_named_vec_lists
+  joint_meas_channel: sim_hand_joint_meas
+  named_vec_list_channel: sim_obj_pose_bb2world
+  named_vec_list_channel_2: sim_contact_forces_in_world
+  max_pub_freq: 2000

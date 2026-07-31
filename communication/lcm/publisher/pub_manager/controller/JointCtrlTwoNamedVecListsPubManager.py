@@ -1,0 +1,46 @@
+from queue import Queue
+
+import lcm
+
+from communication.lcm.publisher.BasePubManager import BaseCtrlPubManager
+from communication.lcm.publisher.data_publisher.JointCtrlPublisher import (
+    JointCtrlPublisher,
+)
+from communication.lcm.publisher.data_publisher.NamedVecListPublisher import (
+    NamedVecListPublisher,
+)
+
+
+class JointCtrlTwoNamedVecListsPubManager(BaseCtrlPubManager):
+    """
+    Class for managing the publisher for the JointCtrlNamedVecListPubManager.
+    """
+
+    def __init__(
+        self,
+        ctrl_channel: str = "joint_ctrl_named_vec_list",
+        named_vec_list_channel_1: str = "named_vec_list_1",
+        named_vec_list_channel_2: str = "named_vec_list_2",
+        *args,
+        **kwargs
+    ):
+        super().__init__(*args, **kwargs)
+
+        self.pub_que_dict[named_vec_list_channel_1] = Queue()
+        self.pub_que_dict[named_vec_list_channel_2] = Queue()
+
+        self.publisher_dict[ctrl_channel] = JointCtrlPublisher(
+            self._lcm_instance, ctrl_channel, self.ctrl_pub_que
+        )
+
+        self.publisher_dict[named_vec_list_channel_1] = NamedVecListPublisher(
+            self._lcm_instance,
+            named_vec_list_channel_1,
+            self.pub_que_dict[named_vec_list_channel_1],
+        )
+
+        self.publisher_dict[named_vec_list_channel_2] = NamedVecListPublisher(
+            self._lcm_instance,
+            named_vec_list_channel_2,
+            self.pub_que_dict[named_vec_list_channel_2],
+        )

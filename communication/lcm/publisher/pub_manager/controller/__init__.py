@@ -48,4 +48,11 @@ def get_controller_pub_manager(cfg_pub_manager: DictConfig) -> BaseCtrlPubManage
 
         return JointCtrlGraspVizPubManager(**cfg_pub_manager)
 
+    elif name == "joint_ctrl_two_named_vec_lists":
+        from communication.lcm.publisher.pub_manager.controller.JointCtrlTwoNamedVecListsPubManager import (
+            JointCtrlTwoNamedVecListsPubManager,
+        )
+
+        return JointCtrlTwoNamedVecListsPubManager(**cfg_pub_manager)
+
     raise ValueError(f"Unknown publisher manager: {name}")

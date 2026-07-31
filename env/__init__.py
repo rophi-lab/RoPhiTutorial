@@ -31,4 +31,9 @@ def get_env(cfg_env: DictConfig) -> BaseEnv:
 
         return FlexivArmHandGraspEnv(cfg_env)
 
+    if name == "mj_meshes_grasp_eval":
+        from env.robotis_5f.MjMeshesGraspEvalEnv import MjMeshesGraspEvalEnv
+
+        return MjMeshesGraspEvalEnv(cfg_env)
+
     raise ValueError(f"Unknown environment name: {name}.")

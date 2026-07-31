@@ -1,0 +1,21 @@
+name: mj_eval_grasp
+vis_freq: 60
+
+realtime_mesh_grasp:
+  obj_pose_data_channel: sim_obj_pose_bb2world
+  hand_joint_data_channel: sim_hand_joint_meas
+  num_hand_joints: 20
+  contact_forces_data_channel: sim_contact_forces_in_world
+  mesh_path: assets/object_mesh/green_bowl/textured_mesh.obj
+  obj_name: green_bowl
+  mesh_name: predefined_obj
+  hand_urdf_path: assets/scene/robotis_5f/robotis_5f_vis.urdf
+  hand_mesh_path: assets/scene/robotis_5f
+  hand_alpha: 0.5
+  force_scale: 0.05
+
+net_force_arrow:
+  contact_force_arrows_data_channel: sim_net_force_arrow
+  force_scale: 0.05
+  color: [0.0, 1.0, 0.2]
+  line_width: 4.0

@@ -34,4 +34,14 @@ def get_controller_sub_manager(cfg_sub_manager: DictConfig) -> BaseSubManager:
 
         return ArmHandGraspSubManager(**cfg_sub_manager)
 
+    elif name in (
+        "joint_named_vec_list",
+        "robotis_5F_hand_joint_named_vec_list",
+    ):
+        from communication.lcm.subscriber.sub_manager.controller.JointNamedVecListSubManager import (
+            JointNamedVecListSubManager,
+        )
+
+        return JointNamedVecListSubManager(**cfg_sub_manager)
+
     raise ValueError(f"Unknown subscriber manager: {name}")

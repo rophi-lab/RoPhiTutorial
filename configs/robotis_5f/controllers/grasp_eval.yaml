@@ -1,0 +1,53 @@
+name: mj_eval_grasp
+ctrl_freq: 200
+env_mode: sim_real_time
+
+control_type: real_time_feedforward_force_control
+model: robotis_5f
+grasp_idx: 0
+
+obj_mesh_dir: assets/object_mesh/green_bowl
+obj_mesh_path: assets/object_mesh/green_bowl/textured_mesh.obj
+
+grasp_squeeze_params_generator_config:
+  urdf_path: assets/scene/robotis_5f/robotis_5f.urdf
+  mesh_path: assets/scene/robotis_5f
+  mesh_path_dir: assets/object_mesh/green_bowl
+  k_for_contact_force_control: 10.0
+  mu: 0.7
+  min_fn: 10.0
+  null_space_margin: 0.5
+  contact_dist_thr: 0.01
+  attract_dist_thr: 0.01
+  attract_stiffness: 0.0
+  max_contacts_per_link: 3
+  surface_density_per_cm2: 2.0
+  # Contact distance field: GPU UDF (Warp) by default.
+  udf_resolution: 128
+  udf_padding: 0.02
+  udf_device: cuda:0
+  distance_field_backend: auto   # auto|udf|mesh  (auto/udf → GPU UDF)
+  enable_torque_limit: true
+  enable_achievable_force: true
+  enable_force_closure: true
+  enable_fingertip_approach: true
+  contact_source: object
+  torque_limit: [
+    0.2, 0.2, 0.2, 0.2,
+    0.2, 0.2, 0.2, 0.2,
+    0.2, 0.2, 0.2, 0.2,
+    0.2, 0.2, 0.2, 0.2,
+    0.2, 0.2, 0.2, 0.2,
+  ]
+
+sub_manager:
+  name: joint_named_vec_list
+  joint_meas_channel: sim_hand_joint_meas
+  named_vec_list_channel: sim_obj_pose_bb2world
+  num_joints: 20
+
+pub_manager:
+  name: joint_ctrl_two_named_vec_lists
+  ctrl_channel: sim_joint_ctrl
+  named_vec_list_channel_1: sim_contact_forces_in_world
+  named_vec_list_channel_2: sim_net_force_arrow

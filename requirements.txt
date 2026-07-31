@@ -1,3 +1,5 @@
+warp-lang
+
 # basics
 numpy==2.2.5
 matplotlib==3.10.1
@@ -23,6 +25,9 @@ cmeel-tinyxml2==10.0.0
 viser
 yourdfpy
 trimesh
+
+# GPU unsigned-distance field for grasp contact detection (UDFGrid)
+warp
 
 
 # fcl for collision detection (import name: fcl)

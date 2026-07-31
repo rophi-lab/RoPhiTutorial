@@ -1,22 +1,13 @@
-# Joint-Space vs SE(3) Task-Space Impedance
+# Joint-space vs SE(3) impedance
 
-`ImpedanceControl` (config
-`configs/flexiv_arm_5F_hand/controllers/impedance.yaml`) regulates the arm
-about a **fixed nominal pose** using either
+Impedance control means: behave like a **spring–damper** relative to a nominal pose — compliant when pushed, restoring when released. This tutorial compares two ways to define that spring:
 
-1. **Joint-space impedance** — spring–damper on $q_{\mathrm{nom}}-q$, or
-2. **Task-space SE(3) impedance** — geometric spring–damper on the palm frame
-   $T\in\mathrm{SE}(3)$.
-
-Students can toggle modes (`j` / `t` or the Viser dropdown), push the arm in
-MuJoCo, and compare how the end-effector returns to the nominal frame.
-
-Builds on gravity FF ([03](03_grav_comp.md)) and Pinocchio FK / Jacobians
-([06](06_inverse_kinematics_quadratic_program.md)).
+1. **Per joint** (easy to implement, configuration-dependent in Cartesian space),
+2. **On the palm’s SE(3) pose** (geometric, natural for “hold this hand frame”).
 
 ---
 
-## Run
+## 1. Run & LCM communication
 
 ```bash
 python run_env.py --config configs/flexiv_arm_5F_hand/env/default.yaml
@@ -26,173 +17,95 @@ python run_controller.py --config configs/flexiv_arm_5F_hand/controllers/impedan
 python run_visualizer.py --config configs/visualizer/flexiv_arm_5F_hand/impedance.yaml
 ```
 
-**Keyboard**
+| Key | Mode |
+|-----|------|
+| `j` | Joint-space impedance |
+| `t` | Task-space (palm SE(3)) impedance |
+| `p`/`q` | Pause / quit |
 
-| Key | Action |
-|-----|--------|
-| `j` | joint-space impedance |
-| `t` | SE(3) task impedance at `palm` |
-| `p` / `q` | pause / quit |
+### What you should observe
 
-**Viser (Impedance folder)**
+Disturb the arm in MuJoCo. In both modes it should push back toward a nominal posture / palm pose. Switch `j` ↔ `t` and compare how the **hand frame** resists translation vs rotation. Viser can show errors and let you scale gains live.
 
-| UI | Meaning |
-|----|---------|
-| Purple axes | nominal palm $T_{\mathrm{nom}}=\mathrm{FK}(q_{\mathrm{nom}})$ |
-| Green axes | current palm $T(q)$ |
-| Mode dropdown | joint / task (same as `j`/`t`) |
-| Gain sliders | live scales for $K_q,D_q$ and $K_t,D_t$ |
-| Markdown | $\|q-q_{\mathrm{nom}}\|$, $\|p-p_{\mathrm{nom}}\|$, $\|\xi\|$ |
+### LCM
 
-Env tip: with default gravity + soft gains you can **drag the arm** in the
-MuJoCo viewer and feel the restoring behavior.
+| Channel | Direction | Role |
+|---------|-----------|------|
+| Joint measurements | env → ctrl | $q,\dot q$ |
+| `sw_flexiv_arm_hand_joint_ctrl` | ctrl → env | Usually pure $\tau_{\mathrm{ff}}$ (PD gains zero at the plant interface) |
+| `sw_imp_status` | ctrl → viz | Errors / mode |
+| `sw_imp_gains_cmd` | viz → ctrl | Gain scales from the GUI |
 
 ---
 
-## Nominal pose
+## 2. Ideas
 
-YAML `default_q` is $q_{\mathrm{nom}}$. Task nominal is fixed at startup:
+### Shared setup
+
+Let $q_{\mathrm{nom}}$ be a comfortable default posture and
 
 $$
-T_{\mathrm{nom}} = \mathrm{FK}_{\mathrm{palm}}(q_{\mathrm{nom}}).
+T_{\mathrm{nom}} = \mathrm{FK}_{\mathrm{palm}}(q_{\mathrm{nom}})
 $$
 
-Fingers stay soft-PD to $q_{\mathrm{nom}}$ (`kp_hand` / `kd_hand`) in both modes.
-Arm impedance torques go through $\tau_{\mathrm{ff}}$ with plant $K_p=K_d=0$ on
-the arm.
+the corresponding palm pose in $\mathrm{SE}(3)$ (position + orientation).
 
----
+### Joint impedance
 
-## 1. Joint-space impedance
+Treat each joint as its own spring–damper:
 
 $$
 \tau
-=
-K_q(q_{\mathrm{nom}}-q)
--
-D_q\,\dot{q}
-+
-g(q).
+  = K_q(q_{\mathrm{nom}}-q)
+  - D_q\dot q
+  + g(q).
 $$
 
-$K_q$, $D_q$ are diagonal (config `kq`, `dq`), scaled by Viser `kq_scale` /
-`dq_scale`. Defaults use the min-jerk critical-damping recipe
-(`kq_i = dq_i^2 / (4 m_i)`) with the tuned `dq` in YAML; finger entries are 0
-(held by `kp_hand` / `kd_hand`).
+**Pros:** simple, stable if gains are modest.  
+**Cons:** the Cartesian stiffness at the palm **changes with configuration** — the same $K_q$ does not mean “100 N/m in $x$.”
 
-**Feel:** each joint is an independent spring. Pushing the palm along one
-Cartesian direction generally **moves many joints**; restoring paths in
-task space look “joint-like” / curved, and orientation is not regulated in
-$\mathrm{SE}(3)$.
+### SE(3) impedance (body frame)
 
-> **NOTE — damping-only “overdamping”.** On paper, raising $D_q$ alone while
-> keeping $K_q$ fixed increases the damping ratio
-> $\zeta = D_q / (2\sqrt{K_q m})$ and should **overdamp** the SISO joint model
-> (sluggish return, no ringing). Try it with Viser `dq_scale` ↑ and
-> `kq_scale` fixed.
->
-> If the arm still **oscillates / chatters**, that is usually **not** the
-> undamped second-order mode from the formula. Typical causes in this stack:
->
-> 1. **$\dot{q}$ noise** — $\tau$ contains $-D_q\dot{q}$, so larger $D_q$
->    amplifies measurement noise into high-frequency torque chatter;
-> 2. **delay** — 1 kHz discrete control + LCM with high $D$ can make the
->    delayed damping loop look unstable / limit-cycle;
-> 3. **non-diagonal $M(q)$** — critical damping used a scalar
->    `mean_mass_matrix_diag`; coupled inertias and configuration dependence
->    break the single-DOF intuition;
-> 4. **tiny distal $m$** — joints 6–7 still kick hard for modest $K_q$ when
->    $m$ is $\sim 10^{-2}$–$10^{-3}$.
->
-> Safer: move **`kq_scale` and `dq_scale` together** (keep $\zeta\approx 1$),
-> or lower both. Jitter from “more damping” is a feature of real closed loops,
-> not a contradiction of the overdamping math.
+Work with the palm pose $T(q)$ and the **body** (LOCAL) twist $V_b = J_b(q)\dot q$.
 
----
-
-## 2. SE(3) task-space impedance
-
-Pinocchio **body** (LOCAL) quantities at `task_frame` (`palm`):
+Measure pose error on the group with the matrix logarithm:
 
 $$
-\xi
-=
-\log\!\big(T^{-1}T_{\mathrm{nom}}\big)^{\vee}
-\in\mathbb{R}^{6}
-\quad\text{(layout $(\nu,\omega)$: linear then angular)},
+\xi = \log\bigl(T(q)^{-1} T_{\mathrm{nom}}\bigr)^{\vee}
+   = \begin{pmatrix} \nu \\ \omega \end{pmatrix}
+\quad
+(\nu\text{: translation-like},\;\omega\text{: rotation-like}).
 $$
 
+Choose diagonal stiffness / damping in that chart:
+
 $$
-V_b = J_b(q)\,\dot{q},
+K = \mathrm{diag}(k_t I_3,\, k_r I_3),
 \qquad
-F = K\,\xi - D\,V_b,
+D = \mathrm{diag}(d_t I_3,\, d_r I_3).
+$$
+
+Command a body wrench and map it to joints:
+
+$$
+F = K\xi - D V_b,
 \qquad
-\tau = J_b^{\top} F + g(q).
+\tau = J_b(q)^\top F + g(q).
 $$
 
-Isotropic gains:
+The hand may still use ordinary joint springs so fingers stay roughly open/closed as desired.
 
-$$
-K=\mathrm{diag}(k_t I_3,\,k_r I_3),
-\qquad
-D=\mathrm{diag}(d_t I_3,\,d_r I_3)
-$$
+### A gentle warning about “just add damping”
 
-(`kt_trans`, `kt_rot`, `dt_trans`, `dt_rot` × Viser scales).
-
-**Feel:** the palm axes (green) are pulled toward the purple nominal frame as a
-**pose spring**. Translations and rotations are co-located in the body wrench;
-nullspace motions that leave $T$ unchanged are soft (not actively stiff).
+In a perfect single-axis toy model, more $D$ only overdamps. On a real (or simulated) arm with **delay**, **noisy $\dot q$**, and **light wrists**, large $D$ can chatter. Increase $K$ and $D$ together, and prefer modest steps when tuning in Viser.
 
 ---
 
-## 3. What to compare
+## 3. How it is implemented
 
-| Experiment | Joint | Task SE(3) |
-|------------|-------|------------|
-| Push palm in $+z$, release | multi-joint unwind; tip path may arc | tip returns nearly along the displacement |
-| Twist palm about $z$ | may need several joints; ends can drift | orientation springs back about palm |
-| Stiffen only `kt_trans_scale` | (no effect) | translation firmer, rotation same |
-| Stiffen only `kq_scale` | all joints firmer | (scales unused in τ until you switch to joint) |
+| Piece | Role |
+|-------|------|
+| `controller/ImpedanceControl.py` | Modes `j` / `t`; Pinocchio `log6` + LOCAL Jacobian |
+| `configs/.../impedance.yaml` | `kq`/`dq`, `kt_*`/`dt_*`, hand gains, `task_frame` |
 
-Watch $\|\xi\|$ and the two axis triads: in task mode they should re-align; in
-joint mode they often stay **misaligned** while $\|q-q_{\mathrm{nom}}\|$ shrinks.
-
----
-
-## Config map
-
-| Key | Role |
-|-----|------|
-| `default_q`, `task_frame` | nominal $q$ and SE(3) frame |
-| `kq`, `dq`, `kq_scale`, `dq_scale` | joint impedance |
-| `kt_*`, `dt_*`, `*_scale` | SE(3) body impedance |
-| `kp_hand`, `kd_hand` | soft finger hold |
-| `do_grav_comp` | add $g(q)$ |
-| `sw_imp_status` / `sw_imp_gains_cmd` | Viser |
-
----
-
-## Exercises
-
-1. **Same push, two modes.** Displace the palm by hand, release under `j`, then
-   repeat under `t`. Sketch tip paths.
-2. **Orientation.** With `t`, raise `kt_rot_scale` and twist the palm; then set
-   it near 0 — does $\xi_\omega$ linger?
-3. **Nullspace.** In task mode, can you wiggle a proximal joint without moving
-   the green triad much? Compare to joint mode.
-4. **Gain ratio.** Keep $k_t/d_t$ ~ critical / overdamped while sweeping
-   `kt_trans_scale` and `dt_trans_scale` together vs separately.
-5. **Damping only (joint).** Raise `dq_scale` alone. Does it look
-   overdamped or does it chatter? Explain using the NOTE above.
-
----
-
-## Takeaways
-
-1. Joint impedance is simple and stable, but does **not** enforce Cartesian /
-   orientation springs.
-2. SE(3) impedance uses $\xi=\log(T^{-1}T_{\mathrm{nom}})^{\vee}$ and
-   $J_b^{\top}F$ so the **palm frame** is the spring.
-3. Comparing purple vs green triad + $\|\xi\|$ makes the difference visible;
-   Viser gain sliders make stiffness experiments fast.
+**Try:** set very soft $k_t$ in task mode and push the palm — it should yield in translation while still roughly holding orientation if $k_r$ stays larger.

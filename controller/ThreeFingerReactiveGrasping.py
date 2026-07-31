@@ -48,7 +48,7 @@ from utils.velocity_fields.weight_func import (
     weight_func_tanh,
 )
 
-DIST_THR_REACHING2CLOSING_GRIPPER = 0.01
+DIST_THR_REACHING2CLOSING_GRIPPER = 0.02
 DIST_THR_ANY2REACHING = 0.05
 DEFAULT_V = 1.5
 DEFAULT_EPS = 0.25
@@ -204,7 +204,9 @@ class ThreeFingerReactiveGrasping(BaseController):
             config.get("joint_velocity_limit", np.full(self._n, 2.0)),
             dtype=np.float64,
         )
-        # IKQP ||qd||^2 regularization (larger on arm → more conservative arm motion).
+        # IKQP ||qd||^2 regularization (larger → more conservative joint motion).
+        # Prefer full-vector ``ikqp_qd_reg``; else ``ikqp_reg_arm`` (scalar or
+        # per-arm-joint list) + ``ikqp_reg_hand`` (scalar or per-hand list).
         if "ikqp_qd_reg" in config:
             self._ikqp_qd_reg = np.asarray(config["ikqp_qd_reg"], dtype=np.float64)
             if self._ikqp_qd_reg.shape != (self._n,):
@@ -212,14 +214,28 @@ class ThreeFingerReactiveGrasping(BaseController):
                     f"ikqp_qd_reg must have length {self._n}, got {self._ikqp_qd_reg.shape}"
                 )
         else:
-            reg_arm = float(config.get("ikqp_reg_arm", 10.0))
-            reg_hand = float(config.get("ikqp_reg_hand", 0.01))
-            self._ikqp_qd_reg = np.concatenate(
-                [
-                    np.full(self._num_arm, reg_arm, dtype=np.float64),
-                    np.full(self._n - self._num_arm, reg_hand, dtype=np.float64),
-                ]
-            )
+            reg_arm = np.asarray(
+                config.get("ikqp_reg_arm", 10.0), dtype=np.float64
+            ).reshape(-1)
+            if reg_arm.size == 1:
+                reg_arm = np.full(self._num_arm, float(reg_arm[0]), dtype=np.float64)
+            elif reg_arm.size != self._num_arm:
+                raise ValueError(
+                    f"ikqp_reg_arm must be a scalar or length-{self._num_arm} list, "
+                    f"got shape {reg_arm.shape}"
+                )
+            n_hand = self._n - self._num_arm
+            reg_hand = np.asarray(
+                config.get("ikqp_reg_hand", 0.01), dtype=np.float64
+            ).reshape(-1)
+            if reg_hand.size == 1:
+                reg_hand = np.full(n_hand, float(reg_hand[0]), dtype=np.float64)
+            elif reg_hand.size != n_hand:
+                raise ValueError(
+                    f"ikqp_reg_hand must be a scalar or length-{n_hand} list, "
+                    f"got shape {reg_hand.shape}"
+                )
+            self._ikqp_qd_reg = np.concatenate([reg_arm, reg_hand])
         # Penalize ||qd - qd_prev||^2 for temporal smoothness (0 disables).
         self._ikqp_reg_qd_rate = float(config.get("ikqp_reg_qd_rate", 1.0))
         # Cap collision escape-rate demands so deep penetration cannot make
@@ -256,10 +272,10 @@ class ThreeFingerReactiveGrasping(BaseController):
 
         self._qd_des = np.zeros(self._n, dtype=np.float64)
         self._tau_ff_des = np.zeros(self._n, dtype=np.float64)
-        # Once IKQP goes primal-infeasible, freeze qd=0 until the operator
-        # re-enters reaching / home / grav (next "solved" QP often bangs at
-        # velocity limits and looks like a runaway).
+        # Once IKQP fails we zero qd for that plan only (BRL strategy) — no
+        # permanent latch. Kept for API compat with subclasses / keys.
         self._ikqp_fault = False
+        self._ikqp_fail_log_t = 0.0
         self._plan_results: Queue = Queue(maxsize=1)
         self._stop_plan = threading.Event()
         self._plan_dt = 1.0 / float(config.get("plan_freq", 50))
@@ -282,12 +298,18 @@ class ThreeFingerReactiveGrasping(BaseController):
         self._ft_n_index_target = np.zeros(3)
         self._ft_n_middle_target = np.zeros(3)
         self._ft_targets = np.zeros((3, 3), dtype=np.float64)
+        self._ft_targets_valid = False
         self._ft_paths = np.zeros((3, self._num_lvf_points + 2, 3), dtype=np.float64)
         self._error_reaching = 0.0
         self._error_grasp = 0.0
         self._error_index_angle = 0.0
         self._error_middle_angle = 0.0
         self._active_grasp_idx = 0
+        # Sticky grasp selection: re-argmin every plan tick flips between
+        # antipodal / flipped pairs and makes fingertip targets jump.
+        self._grasp_selection_locked = False
+        self._index_middle_assignment = None  # 0 or 1 once locked
+        self._grasp_switch_margin = float(config.get("grasp_switch_margin", 0.03))
         self._grasp_reach_dir_tf = self._grasp_reaching_direction_cad.copy()
 
         # Placeholder poses / Jacobians filled in ``_compute_variables``.
@@ -359,19 +381,18 @@ class ThreeFingerReactiveGrasping(BaseController):
         self._lift_done = False
 
     def _clear_ikqp_fault(self) -> None:
-        if self._ikqp_fault:
-            print("[3FGrasp] IKQP fault cleared")
+        """Compatibility no-op (IKQP failures no longer latch)."""
         self._ikqp_fault = False
 
-    def _trip_ikqp_fault(self, reason: str) -> np.ndarray:
-        if not self._ikqp_fault:
-            print(
-                f"[3FGrasp] IKQP fault ({reason}) → freeze qd=0 "
-                "(press v / d / g to resume)"
-            )
-        self._ikqp_fault = True
-        self._qd_des[:] = 0.0
-        self._tau_ff_des[:] = 0.0
+    def _ikqp_fail_zeros(self, reason: str) -> np.ndarray:
+        """BRL strategy: failed / infeasible IKQP → qd=0 this plan only (no latch).
+
+        Never command OSQP's primal-infeasibility certificate in ``res.x``.
+        """
+        now = time.time()
+        if now - getattr(self, "_ikqp_fail_log_t", 0.0) >= 1.0:
+            self._ikqp_fail_log_t = now
+            print(f"[3FGrasp] IKQP no solution ({reason}) → qd=0 this plan")
         return np.zeros(self._n_x, dtype=np.float64)
 
     def _handle_key(self, key: str) -> None:
@@ -485,10 +506,12 @@ class ThreeFingerReactiveGrasping(BaseController):
             self._ft_x_index,
             self._ft_x_middle,
             grasp_width_multiple=width_mult,
+            update_selection=True,
         )
         self._ft_targets[0] = self._ft_x_thumb_target
         self._ft_targets[1] = self._ft_x_index_target
         self._ft_targets[2] = self._ft_x_middle_target
+        self._ft_targets_valid = True
 
         n_i = self._ft_x_thumb_target - self._ft_x_index_target
         self._ft_n_index_target = n_i / (np.linalg.norm(n_i) + 1e-9)
@@ -501,12 +524,13 @@ class ThreeFingerReactiveGrasping(BaseController):
             + 0.5 * (self._ft_x_index_target + self._ft_x_middle_target)
         )
         self._error_reaching = float(np.linalg.norm(ft_mid - ft_mid_t))
-        # Contact-width mid error for lose-grasp (independent of squeeze target jump).
+        # Contact-width mid error for lose-grasp (do not touch active selection).
         thumb_c, index_c, middle_c = self._compute_target_grasp_data(
             self._ft_x_thumb,
             self._ft_x_index,
             self._ft_x_middle,
             grasp_width_multiple=1.0,
+            update_selection=False,
         )
         ft_mid_c = 0.5 * (thumb_c + 0.5 * (index_c + middle_c))
         self._error_grasp = float(np.linalg.norm(ft_mid - ft_mid_c))
@@ -522,9 +546,18 @@ class ThreeFingerReactiveGrasping(BaseController):
         )
 
     def _compute_target_grasp_data(
-        self, ft_x_thumb, ft_x_index, ft_x_middle, grasp_width_multiple=1.0
+        self,
+        ft_x_thumb,
+        ft_x_index,
+        ft_x_middle,
+        grasp_width_multiple=1.0,
+        update_selection=True,
     ):
-        """Select antipodal pair and split right contact into index/middle (brl)."""
+        """Select antipodal pair and split right contact into index/middle (brl).
+
+        When ``update_selection`` is True, grasp index / index–middle assignment
+        are sticky with hysteresis so targets do not flicker every plan tick.
+        """
         gps = self._grasp_points_world()
         x_lft = ft_x_thumb
         x_rft = 0.5 * (ft_x_index + ft_x_middle)
@@ -543,8 +576,28 @@ class ThreeFingerReactiveGrasping(BaseController):
         e_ang = np.arccos(
             np.clip((x_diff_curr_u.reshape(1, 3) * cand_diff_u).sum(axis=1), -1.0, 1.0)
         )
-        grasp_idx = int(np.argmin(e_lft + e_rft + 0.1 * e_ang))
-        self._active_grasp_idx = grasp_idx
+        costs = e_lft + e_rft + 0.1 * e_ang
+        best_idx = int(np.argmin(costs))
+
+        if update_selection:
+            if (not self._grasp_selection_locked) or (
+                self._active_grasp_idx < 0 or self._active_grasp_idx >= costs.shape[0]
+            ):
+                grasp_idx = best_idx
+                self._grasp_selection_locked = True
+            else:
+                cur_cost = float(costs[self._active_grasp_idx])
+                best_cost = float(costs[best_idx])
+                # Only switch if another candidate is clearly better.
+                if best_cost < cur_cost - self._grasp_switch_margin:
+                    grasp_idx = best_idx
+                else:
+                    grasp_idx = int(self._active_grasp_idx)
+            self._active_grasp_idx = grasp_idx
+        else:
+            grasp_idx = int(
+                np.clip(self._active_grasp_idx, 0, max(costs.shape[0] - 1, 0))
+            )
 
         x_ft_center = cand_center[grasp_idx]
         x_ft_diff = grasp_width_multiple * cand_diff[grasp_idx]
@@ -572,7 +625,29 @@ class ThreeFingerReactiveGrasping(BaseController):
         d2 = (cand2_i - cand2_m) / (np.linalg.norm(cand2_i - cand2_m) + 1e-9)
         e1 = np.arccos(np.clip(d1.dot(cur), -1.0, 1.0))
         e2 = np.arccos(np.clip(d2.dot(cur), -1.0, 1.0))
-        if e1 < e2:
+        prefer_1 = e1 < e2
+
+        if update_selection:
+            if self._index_middle_assignment is None:
+                self._index_middle_assignment = 0 if prefer_1 else 1
+            # Sticky: only flip assignment if the other is clearly better.
+            elif prefer_1 and self._index_middle_assignment == 1 and (e2 - e1) > 0.25:
+                self._index_middle_assignment = 0
+            elif (
+                (not prefer_1)
+                and self._index_middle_assignment == 0
+                and (e1 - e2) > 0.25
+            ):
+                self._index_middle_assignment = 1
+            use_1 = self._index_middle_assignment == 0
+        else:
+            use_1 = (
+                prefer_1
+                if self._index_middle_assignment is None
+                else self._index_middle_assignment == 0
+            )
+
+        if use_1:
             return ft_x_thumb_target, cand1_i, cand1_m
         return ft_x_thumb_target, cand2_i, cand2_m
 
@@ -587,6 +662,9 @@ class ThreeFingerReactiveGrasping(BaseController):
     def _enter_reaching(self) -> None:
         self._state = "reaching"
         self._reset_closing_flags()
+        # Re-select grasp once when (re)entering reach; then keep it sticky.
+        self._grasp_selection_locked = False
+        self._index_middle_assignment = None
 
     def _fsm(self) -> None:
         if self._state == "reaching":
@@ -822,10 +900,12 @@ class ThreeFingerReactiveGrasping(BaseController):
     def _solve_IKQP(
         self, q, task_space_plans, list_A=None, list_A_lb=None, list_A_ub=None
     ):
-        if self._ikqp_fault:
-            return np.zeros(self._n_x, dtype=np.float64)
+        """Weighted task-space IK QP (BRL failure policy).
 
-        qd_zero = np.zeros(self._n_x, dtype=np.float64)
+        On infeasible / unsolved OSQP: return ``qd = 0`` for **this plan only**.
+        Do not latch a permanent fault, and never command OSQP's infeasibility
+        certificate in ``res.x``.
+        """
         vlim = self._joint_velocity_limit
 
         # Joint velocity / limit box.
@@ -866,8 +946,9 @@ class ThreeFingerReactiveGrasping(BaseController):
             P_np += J.T @ J * w
             g_np += -xd_des @ J * w
 
+        # BRL: if u < l → no solution → qd = 0 (this plan only).
         if np.any(u < l - 1e-12):
-            return self._trip_ikqp_fault("inconsistent bounds")
+            return self._ikqp_fail_zeros("u < l (inconsistent bounds)")
 
         try:
             m = osqp.OSQP()
@@ -880,29 +961,27 @@ class ThreeFingerReactiveGrasping(BaseController):
                 verbose=False,
                 warm_starting=True,
             )
-            # Warm-start from previous *command*, not measured qd (avoids
-            # amplifying noisy / large measured velocities).
+            # Warm-start from previous command (clipped).
             x0 = np.clip(self._qd_des, -vlim, vlim)
             m.warm_start(x=x0, y=np.zeros(A.shape[0]))
             res = m.solve()
         except Exception as e:
-            return self._trip_ikqp_fault(f"exception: {e}")
+            return self._ikqp_fail_zeros(f"exception: {e}")
 
-        status = str(getattr(res.info, "status", "")).lower()
         status_val = int(getattr(res.info, "status_val", -1))
         solved = status_val == int(osqp.constant("OSQP_SOLVED"))
-        # OSQP leaves a huge primal-infeasibility certificate in ``res.x``.
-        # Never command that — freeze and latch.
-        if (not solved) or ("infeas" in status):
-            return self._trip_ikqp_fault(f"status={res.info.status}")
+        # BRL: only accept OSQP_SOLVED; otherwise qd = 0 this plan.
+        # Never use res.x on failure (infeasibility certificate is huge).
+        if not solved:
+            return self._ikqp_fail_zeros(f"status={res.info.status}")
 
         qd = np.asarray(res.x, dtype=np.float64).reshape(-1)
         if qd.shape[0] != self._n_x or not np.all(np.isfinite(qd)):
-            return self._trip_ikqp_fault("non-finite solution")
+            return self._ikqp_fail_zeros("non-finite solution")
 
-        # Hard clamp + reject absurd magnitudes (certificate leak / bad solve).
+        # Reject absurd magnitudes (should not happen if solved cleanly).
         if np.any(np.abs(qd) > 1.05 * vlim + 1e-6):
-            return self._trip_ikqp_fault("|qd| exceeds limits")
+            return self._ikqp_fail_zeros("|qd| exceeds limits")
         return np.clip(qd, -vlim, vlim)
 
     def _plan_reaching(self):
@@ -1161,10 +1240,6 @@ class ThreeFingerReactiveGrasping(BaseController):
         else:
             if not self._plan_results.empty():
                 self._qd_des, self._tau_ff_des = self._plan_results.get()
-            if self._ikqp_fault:
-                # Stay frozen even if a late/stale plan sneaks into the queue.
-                self._qd_des[:] = 0.0
-                self._tau_ff_des[:] = 0.0
             qd_des = self._qd_des.copy()
             q_des = q
             kp = np.zeros(self._n)
@@ -1271,16 +1346,13 @@ class ThreeFingerReactiveGrasping(BaseController):
             "index_tgt",
             "middle_tgt",
         ]
-        ft_vecs = np.vstack(
-            [
-                tips,
-                (
-                    self._ft_targets
-                    if self._have_obj
-                    else np.zeros((3, 3), dtype=np.float64)
-                ),
-            ]
-        )
+        # Do not publish origin (0,0,0) targets before the first plan update —
+        # that looks like targets jumping between the mesh and "default".
+        if self._have_obj and self._ft_targets_valid:
+            tgts = self._ft_targets.copy()
+        else:
+            tgts = tips.copy()
+        ft_vecs = np.vstack([tips, tgts])
         self._put_named_vec(self._fingertip_viz_channel, ft_names, ft_vecs)
 
         # Heuristic fingertip LVF paths (waypoints), updated during reaching.

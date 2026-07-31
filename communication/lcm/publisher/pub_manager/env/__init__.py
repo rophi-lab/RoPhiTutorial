@@ -33,4 +33,18 @@ def get_env_pub_manager(cfg_pub_manager: DictConfig) -> BasePubManager:
 
         return FlexivArmHandGraspPubManager(**cfg_pub_manager)
 
+    elif name == "joint_named_vec_list":
+        from communication.lcm.publisher.pub_manager.env.JointNamedVecListPubManager import (
+            JointNamedVecListPubManager,
+        )
+
+        return JointNamedVecListPubManager(**cfg_pub_manager)
+
+    elif name == "joint_two_named_vec_lists":
+        from communication.lcm.publisher.pub_manager.env.JointTwoNamedVecListsPubManager import (
+            JointTwoNamedVecListsPubManager,
+        )
+
+        return JointTwoNamedVecListsPubManager(**cfg_pub_manager)
+
     raise ValueError(f"Publisher manager {name} not found.")

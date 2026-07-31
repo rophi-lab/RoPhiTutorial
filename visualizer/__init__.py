@@ -19,5 +19,11 @@ def get_vis_manager(cfg_vis_manager: DictConfig) -> BaseVisManager:
         )
 
         return FlexivArmHandVisManager(cfg_vis_manager)
+    elif cfg_vis_manager["name"] == "mj_eval_grasp":
+        from visualizer.vis_manager.robotis_5f.MjEvalGraspVisManager import (
+            MjEvalGraspVisManager,
+        )
+
+        return MjEvalGraspVisManager(cfg_vis_manager)
     else:
         raise ValueError(f"Visualizer manager {cfg_vis_manager['name']} not found.")

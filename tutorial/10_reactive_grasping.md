@@ -1,28 +1,14 @@
-# Reactive three-finger grasping (Flexiv + RH-5)
+# Reactive three-finger grasping
 
-Tutorial port of the hierarchical reactive grasping pipeline from:
+This is the first “full story” grasping tutorial: the hand **chooses** where to touch an object, **plans** short fingertip paths that stay clear of the geometry, and **tracks** those wishes with a collision-aware joint velocity QP — then squeezes and lifts.
 
-> **Y. Lee\*, T.-Y. Lin\*, A. Alexiev, S. Kim**,  
-> *Hierarchical Reactive Grasping via Task-Space Velocity Fields and Joint-Space Quadratic Programming*,  
-> ICRA 2026.  
-> [arXiv:2509.01044](https://arxiv.org/abs/2509.01044) · [project page](https://reactivegrasp.github.io/)
+Paper: Lee et al., ICRA 2026 · [arXiv:2509.01044](https://arxiv.org/abs/2509.01044) · [reactivegrasp.github.io](https://reactivegrasp.github.io/)
 
-This stack runs on **Flexiv Rizon + Robotis RH-5** in MuJoCo: collision-aware
-fingertip path guidance → task-space velocity fields → joint-space IK QP, plus
-a small tutorial FSM for squeeze / retract. Viser shows the object mesh,
-antipodal candidates, fingertip cur→tgt, and the planned fingertip LVF paths.
-
-It builds on:
-
-- gravity / velocity damping and joint LCM ([03](03_grav_comp.md)),
-- ColInfo + FCL ([04](04_publish_collision_geom.md), [05](05_collision_aware_grav_comp.md)),
-- velocity-level IK QP ([06](06_inverse_kinematics_quadratic_program.md)).
+If [06](06_inverse_kinematics_quadratic_program.md) was “one tip chases a keyboard target,” this is “three tips chase a living grasp on a moving object,” with more care about **which** grasp and **how** they approach.
 
 ---
 
-## Run
-
-Three terminals:
+## 1. Run & LCM communication
 
 ```bash
 python run_env.py --config configs/flexiv_arm_5F_hand/env/grasping.yaml
@@ -34,217 +20,138 @@ python run_visualizer.py --config configs/visualizer/flexiv_arm_5F_hand/grasping
 
 | Key | Where | Action |
 |-----|--------|--------|
-| `o` | env (viewer or terminal) | Random XY (+ small yaw) **object respawn** — keeps sim + GUI running |
-| `r` | env | Full env reset (also reseeds object; restarts viewer) |
-| `g` / `d` | controller | Grav-comp / joint-space go toward `default_q` |
-| `v` | controller | Start **reaching** (also clears IKQP fault latch) |
-| `c` | controller | Force **closing** (squeeze → arm to default) |
+| `o` | env | Respawn the object at a new XY |
+| `r` | env | Full reset |
+| `v` | controller | Start **reaching** |
+| `c` | controller | Force **closing** early |
+| `g` / `d` | controller | Grav-comp / home to `default_q` |
 | `p` / `q` | controller | Pause / quit |
 
-Typical flow: wait for object pose → `v` (reach) → auto or `c` (close) →
-`o` to move the bowl and try again → `d` / `g` if you need to settle.
+### Suggested first run
+
+Start all three processes → press `v` on the controller. Watch the fingertip paths and tip targets in Viser. When tips are close, the FSM should squeeze, then lift. Press `o` to try another object placement.
+
+### What you should observe
+
+- Candidate contact points appear on the object.
+- Three tip targets settle (they should **not** flicker every frame — selection is sticky).
+- Colored polylines show approach paths.
+- The arm/hand moves smoothly toward the grasp; if the QP briefly fails, motion may pause for one plan cycle ($\dot q=0$) and then continue — it should **not** slam.
+
+### Two clocks (keep this picture)
+
+| Loop | Rate | Job |
+|------|------|-----|
+| **Control** | 1 kHz | Physics companion: track latest $\dot q_{\mathrm{des}}$, add gravity |
+| **Plan** | 50 Hz | Pick grasp, build velocity fields, solve IKQP |
+
+Planning is the “thinking”; control is the “reflex.” The plan mailbox keeps only the **latest** command (size 1).
+
+### LCM (high level)
+
+| Channel | Direction | Role |
+|---------|-----------|------|
+| Arm / hand `*_joint_meas` | env → ctrl / viz | State |
+| `sw_flexiv_arm_hand_joint_ctrl` | ctrl → env | 27-DoF command |
+| ColInfo (robot + static) | env → ctrl / viz | FCL shapes |
+| `sw_grasp_object_pose` | env → ctrl / viz | Object CAD→world pose |
+| `sw_grasp_candidates` / `sw_grasp_fingertips` / `sw_grasp_ft_paths` | ctrl → viz | Grasp overlays |
+
+```
+Env -- joints, ColInfo, T_obj --> Controller -- JointCtrl --> Env
+                                      |
+                                      +-- candidates, tips, paths --> Viser
+```
 
 ---
 
-## Architecture (two rates)
+## 2. Ideas
 
-| Thread | Rate | Work |
-|--------|------|------|
-| Plan (`_plan_loop`) | `plan_freq` (50 Hz) | Object pose / FK, grasp selection, fingertip path + VFs, FCL, OSQP → $(\dot q_{\mathrm{des}},\tau_{\mathrm{ff}})$ |
-| Control (`_update`) | `ctrl_freq` (1 kHz) | Track latest $\dot q_{\mathrm{des}}$ with $k_p{=}0$ + velocity damping + gravity FF |
+### Why a hierarchy?
 
-Plans go through a **size-1 queue** (latest wins; drain-before-put). Each
-thread uses its own Pinocchio `Data` (`_pin_data` vs `_pin_data_plan`).
+Solving a long-horizon joint-space plan for 27 DoF every few milliseconds is heavy. Instead:
 
-Code: `controller/ThreeFingerReactiveGrasping.py`.
+| Layer | Lives in | Intuition |
+|-------|----------|-----------|
+| **High** | Tip positions, tip orientations, hand joints | “Where should my fingers go?” → **velocity fields** |
+| **Low** | Full $q\in\mathbb{R}^{27}$ | “Obey those wishes, but don’t hit walls” → **one-step IKQP** |
 
----
+### Choosing a grasp (and sticking to it)
 
-## 1. Why hierarchical?
+From the object pose $T_{\mathrm{obj}}$ and a CAD library of **antipodal** contact pairs (plus flipped pairs), pick a grasp. Re-picking the absolute best pair every plan tick can make tip targets **jump**. The controller therefore uses **sticky selection** with hysteresis: keep the current grasp unless another is clearly better for a while.
 
-Planning a long-horizon trajectory in full $n$-DoF joint space is expensive.
-Lee et al. split the problem:
+During reaching, contacts are widened (approach envelope). During closing, a `squeeze_width_multiple` brings them in. The “right” contact is split into **index** and **middle** along a direction orthogonal to the reach axis so three tips share the load.
 
-| Layer | Space | Role |
-|-------|--------|------|
-| **High** | Task space (fingertip $x_i$, $R_i$; hand joints) | Globally informed **velocity fields** |
-| **Low** | Joint space $q\in\mathbb{R}^{27}$ | One-step **QP** that tracks those fields under collisions & limits |
+### Fingertip linear velocity field (LVF)
 
-Guidance stays cheap (small task dim); feasibility stays reactive (horizon
-$H{=}$`plan_horizon`, full constraints).
+For each tip $i$, build a clearance-aware polyline $c_i(s)$:
 
----
+1. heuristic via-points,
+2. multi-finger SQP that reduces path curvature while keeping distance to the object $\ge \epsilon_{\mathrm{LVF}}$,
+3. optional Savitzky–Golay smoothing.
 
-## 2. Scene & perception (this tutorial)
-
-| Piece | Role |
-|-------|------|
-| `FlexivArmHandGraspEnv` + `hand_grasping.xml` | Freejoint `grasp_object`, ColInfo, live SE(3) on `sw_grasp_object_pose` |
-| `PredefinedObj` | Surface point-cloud distance + unit gradient (unsigned nearest surface) |
-| Grasp candidates | `get_grasp_points_in_cad("green_bowl")` → world via live pose |
-| MuJoCo collision | V-HACD convex parts for the bowl; FCL for arm↔walls/floor |
-
-Spawn: random XY in `obj_spawn_xy_center` ± `obj_spawn_xy_half`, fixed $z$,
-CAD→world orientation (+ small yaw). Press **`o`** to respawn without tearing
-down the viewer.
-
----
-
-## 3. High layer — task-space velocity fields
-
-### 3.1 Grasp target
-
-Antipodal pairs (and L/R flips) are transformed by the live object pose. The
-active trio (thumb / index / middle) is chosen by a distance + alignment cost
-(`_compute_target_grasp_data`). Width can widen for reaching and tighten for
-closing (`squeeze_width_multiple`).
-
-### 3.2 Fingertip linear fields (path-guided LVF)
-
-Straight attractors clip concave bowls. Instead, each tip follows a short
-clearance-aware path $c_i(s)$:
+Then command a speed along the path:
 
 $$
 \dot x_{i,\mathrm{des}}
-  = v(x_i,x_i^*)\,\frac{c_i(s_1)-c_i(s_0)}{\|c_i(s_1)-c_i(s_0)\|}.
+  = v(\|x_i-x_i^\star\|)\,
+    \frac{c_i(s_1)-c_i(s_0)}{\|c_i(s_1)-c_i(s_0)\|}.
 $$
 
-**This repo’s path pipeline** (`_compute_fingertip_linear_velocity_des`):
+Far from the goal tip → move faster; near → slow down. The path, not a straight line, keeps fingertips from diving into the mesh.
 
-1. **Heuristic init** — `heuristic_path_initialization_general` samples
-   2-segment via paths that reduce violations of
-   $d(x,\mathcal{O}) < \epsilon_{\mathrm{LVF}}$
-   (`collision_margin_to_object_lvf`, `heuristic_via_length`).
-2. **SQP polish** (paper TO loop) — `smooth_multi_finger_paths_sqp`
-   (`num_path_sqp_iterations: 3`): OSQP minimizes discrete path curvature
-   subject to linearized $d\ge\epsilon$, then Savitzky–Golay
-   (`path_sqp_savgol_window`).
-3. **Speed** — `speed_const_then_linear_clamped` (const far away, taper near
-   goal, clamp so one plan step cannot overshoot).
+### Orientation and hand posture fields
 
-Paths are stored in `_ft_paths` and published on `sw_grasp_ft_paths` for Viser.
+$$
+\omega_{i,\mathrm{des}} \propto \hat n_i \times \hat n_i^\star,
+\qquad
+\dot q_{h,\mathrm{des}} = \texttt{VF}(q_h,\,q_h^{\mathrm{nom}}).
+$$
 
-### 3.3 Orientation & gripper fields
+Weights use soft $\tanh$ gates: orientation and gripper closing matter more as the tips get close. That avoids “twisting early” while still far away.
 
-- **Orientation:** $\omega_{i,\mathrm{des}} \propto \hat n_i \times \hat n_i^*$
-  (index / middle; tanh gates on angle / reaching error).
-- **Gripper:** joint VF toward `q_nominal_gripper`, weighted up when far from
-  the grasp (`weight_func_tanh` on reaching error).
-
----
-
-## 4. Low layer — joint-space IK QP
-
-Track weighted task plans $\{(w_k,J_k,\dot y_k^{\mathrm{des}})\}$:
+### The IKQP (low-level tracker)
 
 $$
 \begin{aligned}
 \min_{\dot q}\quad
-&\sum_k w_k\,\|J_k\dot q - \dot y_k^{\mathrm{des}}\|^2
+&\sum_k w_k\|J_k\dot q-\dot x_k\|^2
  + \|\dot q\|_{W_{\mathrm{reg}}}^2
- + w_{\mathrm{rate}}\|\dot q-\dot q_{\mathrm{prev}}\|^2 \\
+ + \lambda_{\mathrm{rate}}\|\dot q-\dot q_{\mathrm{prev}}\|^2 \\
 \text{s.t.}\quad
-&\dot q_{\min}\le \dot q \le \dot q_{\max},\\
-&q_{\min}\le q + \dot q\,H \le q_{\max},\\
-&\text{FCL env rows (links↔walls/floor)},\\
-&\text{object rows (phalanx/tip points↔bowl)}.
+&\text{velocity \& short-horizon joint limits},\\
+&\text{FCL environment escape},\\
+&\text{object clearance escape (rate-capped)}.
 \end{aligned}
 $$
 
-Implemented in `_solve_IKQP` (OSQP):
+**Regularization matters.** If arm regularization (`ikqp_reg_arm`) is too small, tip tasks dominate and the shoulder can race toward velocity limits. Values around $1.0$ (with a bit of rate regularization) keep reaching calm.
 
-- **Reg** — `ikqp_reg_arm` / `ikqp_reg_hand` (and optional `ikqp_qd_reg`
-  vector); `ikqp_reg_qd_rate` for temporal smoothness.
-- **Env** — FCL nearest points + point Jacobians
-  (`_add_collision2env_constraints`).
-- **Object** — `PredefinedObj.get_dist_and_grad`
-  (`_add_collision2obstacles_constraints`), margin
-  `collision_margin_to_object_qp`.
-- **Escape cap** — collision lower bounds are clipped by
-  `ikqp_max_escape_rate` so deep penetration cannot demand impossible
-  velocities (which makes the QP primal-infeasible).
+**Failure policy (important):** if OSQP is unsolved, inconsistent, or returns a non-finite / over-limit $\dot q$, command **$\dot q=0$ for that plan only** and try again next cycle. There is **no permanent fault latch**. Never send an infeasibility “certificate” vector to the robot.
 
-### IKQP fault latch
-
-On primal infeasible / non-finite / over-limit solutions, OSQP’s
-`res.x` can be a huge **infeasibility certificate** — never command it.
-The controller:
-
-1. commands $\dot q = 0$,
-2. **latches** `_ikqp_fault` so later “solved” bangs at velocity limits
-   cannot resume motion automatically,
-3. clears the latch on **`v` / `d` / `g` / `c`**.
-
-Without the latch, a single failed tick (~20 ms of zeros) is often followed by
-an aggressive feasible recovery — that looks like a runaway.
-
----
-
-## 5. FSM (tutorial wrapper)
+### Finite-state machine
 
 | State | Behavior |
 |-------|----------|
-| **reaching** | Full hierarchy above. → **closing** when mid-fingertip error $<$ ~1 cm (`DIST_THR_REACHING2CLOSING_GRIPPER`). |
-| **closing · squeeze** | Tip attractors + hand-close $\tau$ for `lift_delay_s`. |
-| **closing · lift** | Arm joint VF → `default_q` (`lift_speed`); hand stays closed. Done when arm error $<$`lift_arm_eps`. |
-| **lost grasp** | Mid error $>$ ~5 cm in closing → back to **reaching**. |
+| **reaching** | Full hierarchy. Auto-close when mid-tip error is $\lesssim 1\,\mathrm{cm}$. |
+| **closing · squeeze** | Tip attractors + hand-close torque for `lift_delay_s`. |
+| **closing · lift** | Arm velocity field toward `default_q`; hand stays closed. |
+| **lost grasp** | If mid error grows past $\sim 5\,\mathrm{cm}$ while closing → go back to reaching. |
 
-Closing / lift are tutorial conveniences; the paper contribution is the
-**reaching** hierarchy.
-
----
-
-## 6. Visualization
-
-| Channel | Content |
-|---------|---------|
-| `sw_grasp_object_pose` | Live object SE(3) (env) |
-| `sw_grasp_candidates` | Antipodal candidate points |
-| `sw_grasp_fingertips` | Tip cur / tgt |
-| `sw_grasp_ft_paths` | Heuristic+SQP fingertip polylines (reaching) |
-
-Straight gray tip→tgt lines in Viser are **not** the LVF paths; the thick
-colored polylines are `_ft_paths`.
+Tutorial [12](12_reactive_grasping_force_closure.md) keeps this reach, but replaces the squeeze with a live force-closure QP.
 
 ---
 
-## 7. Key files & knobs
+## 3. How it is implemented
 
-| File | Role |
-|------|------|
-| `controller/ThreeFingerReactiveGrasping.py` | Fields, SQP paths, IKQP, FSM, fault latch |
-| `utils/planning/heuristics.py` | Via-point path init |
-| `utils/planning/path_sqp.py` | Multi-finger SQP path polish |
-| `utils/shape_primitives/PredefinedObj.py` | Surface distance field |
-| `env/flexiv_arm_5F_hand/FlexivArmHandGraspEnv.py` | Object pose + `o` respawn |
-| `configs/flexiv_arm_5F_hand/controllers/three_finger_reactive_grasp.yaml` | Primary knobs |
+| Piece | Role |
+|-------|------|
+| `controller/ThreeFingerReactiveGrasping.py` | Plan thread, sticky grasp, LVF, IKQP, FSM |
+| `env/flexiv_arm_5F_hand/FlexivArmHandGraspEnv.py` | Object pose, `o` respawn |
+| `utils/planning/heuristics.py` / `path_sqp.py` | Path init + polish |
+| `utils/shape_primitives/PredefinedObj.py` | Object distance field for clearance |
+| `configs/.../three_finger_reactive_grasp.yaml` | Gains, LVF, IKQP, FSM thresholds |
 
-Useful YAML:
+Control loop: gravity (optional friction) + velocity damping on the latest plan. Plan and control use **separate** Pinocchio `Data` so threads do not race.
 
-- Paths: `num_lvf_points`, `num_path_sqp_iterations`, `path_sqp_savgol_window`,
-  `heuristic_via_length`, `collision_margin_to_object_lvf`
-- QP: `plan_horizon`, `collision_margin_to_object_qp`, `env_collision_margin`,
-  `ikqp_reg_arm` / `ikqp_reg_hand` / `ikqp_reg_qd_rate`,
-  `ikqp_max_escape_rate`, `joint_velocity_limit`
-- LVF speed: `linear_velocity_field_v` / `_eps`
-- Closing: `lift_delay_s`, `lift_speed`, `lift_arm_eps`,
-  `squeeze_width_multiple`
-
-Increase `ikqp_reg_arm` (e.g. $10$–$50$) for more conservative arm motion.
-
----
-
-## 8. Takeaways
-
-1. Guide fingertips with a **clearance-aware path** (heuristic + SQP), not a
-   straight attractor into concavities.
-2. Track in joint space with a **weighted QP** so collisions / limits are hard
-   constraints.
-3. Gate orientation / gripper fields with **tanh** priorities.
-4. Keep planning slower than control; use a **latest-only** plan mailbox.
-5. Treat IKQP infeasibility as a **fault**: zero velocity and latch until the
-   operator resumes — do not trust OSQP’s certificate, and do not immediately
-   accept a max-velocity “recovery” solve.
-
-For proofs, experiments, and the original two-finger TO formulation, see the
-paper and [reactivegrasp.github.io](https://reactivegrasp.github.io/).
+**If reaching looks aggressive:** raise `ikqp_reg_arm` (try $1$–$50$) or lower `linear_velocity_field_v` before changing the math.

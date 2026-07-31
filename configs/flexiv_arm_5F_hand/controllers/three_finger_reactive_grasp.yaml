@@ -19,7 +19,7 @@ plan_horizon: 0.05
 num_lvf_points: 100
 num_path_sqp_iterations: 3   # SQP polish after heuristic (0 disables)
 path_sqp_savgol_window: 5    # post-SQP temporal smooth (odd; <=2 skips)
-collision_margin_to_object_lvf: 0.01
+collision_margin_to_object_lvf: 0.02
 collision_margin_to_object_qp: 0.01
 env_collision_margin: 0.05
 linear_velocity_field_v: 0.5
@@ -29,7 +29,7 @@ heuristic_via_length: 0.07
 lift_delay_s: 2.0
 lift_speed: 0.8
 lift_arm_eps: 0.08
-squeeze_width_multiple: 0.55
+squeeze_dwidth_multiple: 0.55
 palm_frame: palm
 joint_limit_margin: 0.05
 
@@ -62,8 +62,8 @@ default_q_values: [
   -1.0, -1.5, 1.0, 0.5,
   -0.15, 1.2, 0.7, 0.5,
   0.0, 1.2, 0.8, 0.5,
-  0.0, 1.2, 0.9, 0.5,
-  0.0, 1.2, 1.0, 0.5,
+  0.0, 0.0, 0.0, 0.0,
+  0.0, 0.0, 0.0, 0.0,
 ]
 q_nominal_gripper: [
   -1.0, -1.5, 1.0, 0.5,
@@ -117,10 +117,11 @@ joint_velocity_limit: [
   1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
   3, 3, 3, 3,  3, 3, 3, 3,  3, 3, 3, 3,  3, 3, 3, 3,  3, 3, 3, 3,
 ]
-# IKQP regularization: larger arm weight → smaller arm joint velocities.
-ikqp_reg_arm: 0.01
+# IKQP regularization: scalar or per-joint list. Higher on proximal arm
+# joints (first 3) keeps the shoulder from racing tip tasks; distal can be softer.
+ikqp_reg_arm: [1.0, 1.0, 1.0, 0.2, 0.2, 0.2, 0.2]
 ikqp_reg_hand: 0.01
-ikqp_reg_qd_rate: 0.0   # temporal smooth ||qd - qd_prev||^2
+ikqp_reg_qd_rate: 0.01   # temporal smooth ||qd - qd_prev||^2
 # Cap collision escape demand so deep penetration cannot make IKQP
 # primal-infeasible (OSQP's infeasibility certificate must never be commanded).
 ikqp_max_escape_rate: 0.35

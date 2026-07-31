@@ -1,0 +1,25 @@
+urdf_path: assets/scene/robotis_5f/robotis_5f.urdf
+vis_urdf_path: assets/scene/robotis_5f/robotis_5f_vis.urdf
+mesh_path: 
+  path_2: assets/scene/robotis_5f
+model: robotis_5f
+
+grasp_squeeze_params_generator_config:
+  # mu: 1.0
+  mu: 0.7
+  min_fn: 10.0
+  null_space_margin: 0.5
+  k_for_contact_force_control: 10.0
+  # Real-time contact detection
+  contact_dist_thr: 0.01
+  attract_dist_thr: 0.01
+  attract_stiffness: 0.0     # N/m spring constant for attraction
+  max_contacts_per_link: 5     # max contact points per link for QP
+  surface_density_per_cm2: 2.0  # Hand-surface sample density (oversample + FPS, blue-noise)
+  enable_torque_limit: True
+  enable_achievable_force: True
+  enable_robust_force_gen: False
+  torque_limit: [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2,
+                  0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2]  # max torque for each joint (20 joints)
+  # torque_limit: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5,
+  #                 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]  # max torque for each joint (20 joints)

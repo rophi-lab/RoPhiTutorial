@@ -49,4 +49,19 @@ def get_controller(cfg_controller: DictConfig) -> BaseController:
 
         return ThreeFingerReactiveGrasping(cfg_controller)
 
+    if name in (
+        "three_finger_reactive_force_closure",
+        "ThreeFingerReactiveForceClosureGrasping",
+    ):
+        from controller.ThreeFingerReactiveForceClosureGrasping import (
+            ThreeFingerReactiveForceClosureGrasping,
+        )
+
+        return ThreeFingerReactiveForceClosureGrasping(cfg_controller)
+
+    if name in ("mj_eval_grasp", "mj_eval_grasp_control", "MjEvalGraspControl"):
+        from controller.MjEvalGraspControl import MjEvalGraspControl
+
+        return MjEvalGraspControl(cfg_controller)
+
     raise ValueError(f"Unknown controller name: {name}.")
