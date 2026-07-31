@@ -84,7 +84,10 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
         self._tau_hand_hold = np.zeros(N_HAND_JOINTS, dtype=np.float64)
         self._force_qp_fail_count = 0
         self._force_qp_fail_log_t = -1e9
-        # Gentle PD toward q_hand_close when force QP has no feasible contacts.
+        # False after an unsolved force-closure OSQP → qd=0, τ=grav only.
+        self._force_qp_ok = True
+        # Gentle PD toward q_hand_close only when there are not yet any contacts
+        # (never used as an OSQP-failure fallback).
         self._closing_pd_scale = float(config.get("closing_pd_scale", 0.25))
         # Dedicated Pinocchio Data for force FK (control thread only).
         self._pin_data_force = self._pin_model.createData()
@@ -238,11 +241,13 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
         self._tau_hand_hold[:] = 0.0
         self._approach_qdot_des_avg[:] = 0.0
         self._force_qp_fail_count = 0
+        self._force_qp_ok = True
         self._last_force_solve_t = -1e9
         print(
             "[3FForceClosure] closing: RT force-closure "
             f"(tip_attractors={self._closing_tip_attractors}, "
-            f"force_ctrl_freq={self._force_ctrl_freq:.0f} Hz)"
+            f"force_ctrl_freq={self._force_ctrl_freq:.0f} Hz; "
+            "OSQP fail → qd=0, τ=grav_comp)"
         )
 
     # ------------------------------------------------------------------
@@ -277,9 +282,14 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
         # Soft hand damping only (arm keeps tracking lift qd).
         kd[self._num_arm :] = np.minimum(kd[self._num_arm :], 0.2)
 
-        tau_ff = tau_ff + self._tau_ff_des
         tau_hand = self._compute_rt_force_torque_rate_limited()
-        tau_ff[self._num_arm :] = tau_ff[self._num_arm :] + tau_hand
+        if not self._force_qp_ok:
+            # Conservative: freeze motion; keep only gravity compensation.
+            qd_des[:] = 0.0
+            # tau_ff already = g(q); do not add plan τ or force-closure τ.
+        else:
+            tau_ff = tau_ff + self._tau_ff_des
+            tau_ff[self._num_arm :] = tau_ff[self._num_arm :] + tau_hand
         self._publish_force_contact_arrows()
 
         cmd = JointCtrlData(num_joints=self._n)
@@ -379,6 +389,7 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
             self._contact_points_world_vis = np.zeros((0, 3))
             self._f_world_vis = np.zeros((0, 3))
             self._prev_tau_qp *= 0.9  # decay stale hold
+            self._force_qp_ok = True  # no OSQP this tick
             # Pre-contact: approach + light PD close (no force-closure yet).
             return self._clip_hand_tau(
                 tau_attract + tau_approach + self._closing_pd_torque()
@@ -391,11 +402,19 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
             all_points_link[contact_mask],
         )
         if not solved:
-            # Do not keep blasting a stale τ_QP into a new contact set.
-            self._prev_tau_qp *= 0.5
-            tau_qp = self._prev_tau_qp
-            # Soft PD keeps a stable squeeze while QP recovers.
-            tau_qp = tau_qp + self._closing_pd_torque()
+            # Conservative: no stale τ_QP, no PD, no attract/approach.
+            # Control loop commands qd=0 and τ=g(q) only until OSQP recovers.
+            self._force_qp_ok = False
+            self._prev_tau_qp[:] = 0.0
+            self._tau_hand_hold[:] = 0.0
+            self._contact_points_world_vis = np.zeros((0, 3))
+            self._f_world_vis = np.zeros((0, 3))
+            self._log_force_qp_fail(
+                "force-closure OSQP failed → qd=0, τ=grav_comp"
+            )
+            return np.zeros(N_HAND_JOINTS, dtype=np.float64)
+
+        self._force_qp_ok = True
         return self._clip_hand_tau(tau_qp + tau_attract + tau_approach)
 
     def _compute_force_fk(self) -> None:
@@ -809,6 +828,8 @@ class ThreeFingerReactiveForceClosureGrasping(ThreeFingerReactiveGrasping):
             )
             self._prev_tau_qp = tau_qp
             self._force_qp_fail_count = 0
+            self._force_qp_ok = True
         else:
             tau_qp = np.zeros(N_HAND_JOINTS, dtype=np.float64)
+            self._force_qp_ok = False
         return tau_qp, solved
