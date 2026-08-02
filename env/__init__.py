@@ -41,4 +41,9 @@ def get_env(cfg_env: DictConfig) -> BaseEnv:
 
         return TableMeshCamEnv(cfg_env)
 
+    if name == "flexiv_arm_hand_cam":
+        from env.calibration_tutorial.FlexivArmHandCamEnv import FlexivArmHandCamEnv
+
+        return FlexivArmHandCamEnv(cfg_env)
+
     raise ValueError(f"Unknown environment name: {name}.")

@@ -1,0 +1,36 @@
+# Differentiable base–camera calibration (tutorial 14)
+# Pose the arm under gravity compensation; capture when the robot is visible in RGB.
+
+rgbd_channel: calib_camera
+arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+
+num_joints: 27
+num_arm_joints: 7
+num_hand_joints: 20
+
+# How many diverse configurations to capture (SPACE in the RGB window).
+num_captures: 2
+
+urdf_path: assets/scene/flexiv_arm/urdf/Rizon4_viser.urdf
+# 0 = keep full visuals (no random face holes). Set >0 to quadric-decimate.
+max_faces: 0
+# Match Manipulator-Software easyhec (Rizon4_arm_only): arm links only.
+arm_only: true
+
+# SAM2 (same stack as tutorial 13)
+sam2_hf_repo: facebook/sam2.1-hiera-tiny
+sam2_hf_filename: sam2.1_hiera_tiny.pt
+sam2_config_file: configs/sam2.1/sam2.1_hiera_t.yaml
+
+# Init OpenCV cam_in_base ≈ GT with small camera-frame SE(3) noise (eyeball convention).
+seed: 0
+init_rot_noise_deg: 5.0
+init_trans_noise_m: 0.03
+
+# Optimizer — EasyHeC / ReactiveGrasp refine_cam_pose_easyhec defaults.
+lr: 0.003
+n_iters: 2000
+early_stop: 200
+viz_every: 5
+render_gray: 0.7

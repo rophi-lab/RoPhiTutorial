@@ -54,4 +54,11 @@ def get_env_pub_manager(cfg_pub_manager: DictConfig) -> BasePubManager:
 
         return CamOnlyPubManager(**cfg_pub_manager)
 
+    elif name == "flexiv_arm_hand_cam":
+        from communication.lcm.publisher.pub_manager.env.flexiv_arm_5F_hand.FlexivArmHandCamPubManager import (
+            FlexivArmHandCamPubManager,
+        )
+
+        return FlexivArmHandCamPubManager(**cfg_pub_manager)
+
     raise ValueError(f"Publisher manager {name} not found.")

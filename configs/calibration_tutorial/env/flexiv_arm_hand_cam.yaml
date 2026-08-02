@@ -1,0 +1,60 @@
+name: flexiv_arm_hand_cam
+scene_xml_path: assets/scene/flexiv_arm/hand_cam_calib.xml
+
+env_mode: sim_real_time
+vis_mode: vis_on
+
+sim_steps_per_control: 1
+sim_freq: 1000
+view_freq: 30
+
+arm_joint_meas_freq: 200
+hand_joint_meas_freq: 200
+
+viewer_cam:
+  distance: 1.8
+  elevation: -25
+  azimuth: 50
+  lookat: [0.3, 0.1, 0.35]
+
+# Arm at a reachable pose visible from calib_camera; hand open.
+platform:
+  name: flexiv_arm_5f_hand
+  default_q_values: [
+    -0.4363323, -0.6981317, 0.6108652, 1.7453293, 0.8726646, 0.5235988, 1.0471976,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+    0, 0, 0, 0,
+  ]
+  # Controller owns gravity (GravCompControl). Keep false to avoid double g(q).
+  gravity_comp: false
+  # Must live under platform so get_sim_platform merges them into SimFlexivArm5FHand.
+  arm_joint_meas_freq: 200
+  hand_joint_meas_freq: 200
+
+sensor:
+  extrinsic:
+    calib_camera:
+      width: 640
+      height: 480
+      rgb_enable: True
+      depth_enable: True
+      frequency: 15
+      fixed: True
+      attached_body: world
+      depth_factor: 1.0
+
+sub_manager:
+  name: joint
+  ctrl_channel: sw_flexiv_arm_hand_joint_ctrl
+  num_joints: 27
+  max_sub_freq: 2000
+
+pub_manager:
+  name: flexiv_arm_hand_cam
+  arm_joint_meas_channel: sw_flexiv_arm_joint_meas
+  hand_joint_meas_channel: sw_robotis_5F_hand_joint_meas
+  calib_camera_channel: calib_camera
+  max_pub_freq: 2000
