@@ -1,0 +1,33 @@
+package vision;
+
+
+
+struct rgbd_t
+{
+    double timestamp;
+    
+    // We assume the rgb and depth have the same size
+    int32_t height; 
+    int32_t width;
+
+    // rgb image
+    int32_t num_rgb_channels;
+    int8_t rgb_channel_type;
+    int32_t rgb_size;
+    byte rgb_image[rgb_size];        
+
+    // depth image
+    int8_t depth_channel_type;
+    int32_t depth_size;
+    byte depth_image[depth_size];
+
+    // enum for channel type
+    const int8_t CHANNEL_TYPE_INT8 = 0;
+    const int8_t CHANNEL_TYPE_UINT8 = 1;
+    const int8_t CHANNEL_TYPE_INT16 = 2;
+    const int8_t CHANNEL_TYPE_UINT16 = 3;
+    const int8_t CHANNEL_TYPE_INT32 = 4;
+    const int8_t CHANNEL_TYPE_UINT32 = 5;
+    const int8_t CHANNEL_TYPE_FLOAT32 = 6;
+    const int8_t CHANNEL_TYPE_FLOAT64 = 7;
+}

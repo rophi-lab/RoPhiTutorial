@@ -1,0 +1,103 @@
+# FoundationPoseTrackingMultiView: FoundationPose + streaming SAM2 across N views.
+# scorer/refiner/glctx/mesh are shared; each view keeps its own FoundationPose
+# estimator (pose_last), SAM2 predictor, and camera parameters. Each view is
+# registered by clicking the object in its own window. Every frame the best
+# (non-lost) view is selected and its pose is re-synced into the other views.
+name: foundation_pose_tracking_multiview
+
+object_name: "predefined_obj"
+mesh_file: assets/object_mesh/ycb_006_mustard_bottle/textured_mesh.obj
+# mesh_file: assets/object_mesh/ycb_024_bowl/textured_mesh.obj
+
+est_refine_iter: 1
+track_refine_iter: 1
+
+# Scene ROI: "x,y,w,h" crop applied to every RGBD frame before the models see it.
+# Options:
+#   null                              -> draw interactively per view on first frame
+#   "x,y,w,h"                         -> same crop for every view
+#   {upper_camera: "x,y,w,h", ...}    -> per-channel crop (keys = channel names)
+scene_roi: null
+
+# Streaming SAM2. One predictor is built per view; checkpoint fetched from
+# HuggingFace on first run (cached under ~/.cache/huggingface).
+sam2:
+  config_file: "configs/sam2.1/sam2.1_hiera_t.yaml"
+  hf_repo: "facebook/sam2.1-hiera-tiny"
+  hf_filename: "sam2.1_hiera_tiny.pt"
+  # checkpoint: third_party/sam2/checkpoints/sam2.1_hiera_large.pt  # optional local ckpt
+  mask_rgb: false
+  mask_depth: false
+  obj_id: 1
+  # torch.compile the SAM2 sub-modules (passed as Hydra model overrides, no fork
+  # edits). The image encoder (Hiera backbone) is the dominant per-frame cost --
+  # enable it first to cut the SAM2 bottleneck (no resolution loss, unlike view
+  # concatenation). The first forward per input shape is slow (max-autotune
+  # warmup), so early frames lag before it settles; use a fixed scene_roi so the
+  # input shape stays constant. The other flags target the lighter VOS
+  # decoder/memory stages and are experimental (verify they take effect).
+  compile:
+    image_encoder: true
+    memory_attention: false
+    memory_encoder: false
+    mask_decoder: false
+    prompt_encoder: false
+
+# Multi-view fusion.
+multiview:
+  # Winner selection: "max" = higher score = better fit, "min" = lower is better.
+  # NOTE: scorer output is a learned per-image logit, not calibrated across
+  # views. Log per-view scores on first runs and fix these empirically.
+  score_direction: min
+  # Lost detection is SEPARATE from winner direction. Even though higher = a
+  # better fit, on outliers (occlusion / drift) the re-scored pose blows up past
+  # ~100. So a view is lost when its score is ABOVE the threshold (lost_side).
+  # Lost views are excluded from winner candidacy; when ALL views are lost the
+  # auto-reregister fallback fires.
+  lost_threshold: 100
+  lost_side: above  # "above": score > threshold => lost (default). "below": score < threshold => lost.
+  # Only re-sync losing views when the winner beats the runner-up by at least
+  # this margin (guards against uncalibrated cross-view score noise).
+  resync_margin: 0.0
+  resync_enable: true
+
+# Auto re-register fallback: when every view is lost (no trustworthy winner)
+# for `streak` consecutive frames -- e.g. the object moved too fast and all
+# trackers drifted -- re-register each view from its current SAM2 mask. Views
+# whose SAM2 mask is empty (object left the frame) are skipped.
+auto_reset:
+  enable: true
+  streak: 3
+
+visualize_sam: true
+debug: 0
+debug_dir: debug_output
+visualize: true
+
+# Silence FoundationPose / SAM2 per-frame INFO log spam (they call
+# logging.basicConfig on the root logger at import). Warnings/errors still show.
+quiet_logs: true
+# Print aggregate tracking FPS + per-view scores every N frames (0 = never).
+fps_report_every: 30
+# Break the FPS line into SAM2 vs FoundationPose(track_one) vs scorer wall-clock
+# (summed over all views, per frame). Adds cuda.synchronize overhead; use to find
+# the bottleneck, then turn off.
+profile_stages: true
+
+pose_filter:
+  use_filter: false
+  alpha: 0.7
+  window_size: 0
+  fix_x_rotation: false
+  fix_z_rotation: false
+
+sub_manager:
+  name: multi_rgbd
+  rgbd_channels:
+    - upper_camera
+    - side_camera
+  max_sub_freq: 2000
+pub_manager:
+  name: named_vec
+  named_vec_list_channel: hw_obj_pose
+  max_pub_freq: 2000

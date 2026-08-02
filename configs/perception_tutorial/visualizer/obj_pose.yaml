@@ -1,0 +1,20 @@
+name: obj_pose
+vis_freq: 30
+
+foundation_pose_mesh:
+  pose_data_channel: fp_obj_pose
+  mesh_path: assets/object_mesh/ycb_006_mustard_bottle/textured_mesh.obj
+  mesh_name: predefined_obj
+  scene_name: /fp_mesh
+  opacity: 1.0
+  show_axes: true
+  axes_scene_name: /fp_pose_frame
+  axes_length: 0.12
+
+# Semi-transparent ground-truth pose from the MuJoCo env.
+gt_mesh:
+  pose_data_channel: sim_obj_pose_bb2world
+  mesh_path: assets/object_mesh/ycb_006_mustard_bottle/textured_mesh.obj
+  mesh_name: predefined_obj
+  scene_name: /gt_mesh
+  opacity: 0.35

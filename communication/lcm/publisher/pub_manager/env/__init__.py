@@ -47,4 +47,11 @@ def get_env_pub_manager(cfg_pub_manager: DictConfig) -> BasePubManager:
 
         return JointTwoNamedVecListsPubManager(**cfg_pub_manager)
 
+    elif name == "cam_only":
+        from communication.lcm.publisher.pub_manager.env.CamOnlyPubManager import (
+            CamOnlyPubManager,
+        )
+
+        return CamOnlyPubManager(**cfg_pub_manager)
+
     raise ValueError(f"Publisher manager {name} not found.")

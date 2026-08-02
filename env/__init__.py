@@ -36,4 +36,9 @@ def get_env(cfg_env: DictConfig) -> BaseEnv:
 
         return MjMeshesGraspEvalEnv(cfg_env)
 
+    if name == "table_mesh_cam":
+        from env.perception_tutorial.TableMeshCamEnv import TableMeshCamEnv
+
+        return TableMeshCamEnv(cfg_env)
+
     raise ValueError(f"Unknown environment name: {name}.")

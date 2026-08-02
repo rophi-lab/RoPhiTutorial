@@ -1,0 +1,43 @@
+# SAM2MaskNode: streams SAM2 masks (one channel per view) for the split
+# multi-view FoundationPose pipeline. Runs in its own process; a separate
+# FoundationPoseMaskNode subscribes to the masks. Each view is registered by
+# clicking the object once, then FULL-FRAME masks stream every frame stamped
+# with the source RGB frame timestamp. ROI cropping is done only in the FP node
+# (which crops the received full-frame mask with the same ROI as its rgb), so
+# this node has no scene_roi.
+name: sam2_mask_node
+
+sam2:
+  config_file: "configs/sam2.1/sam2.1_hiera_t.yaml"
+  hf_repo: "facebook/sam2.1-hiera-tiny"
+  hf_filename: "sam2.1_hiera_tiny.pt"
+  obj_id: 1
+  compile:
+    image_encoder: true
+
+# SAM2 publish-rate throttle (Hz per view). Masks feed the FP node's re-
+# registration only, so a low rate saves GPU/power; the FP node time-matches
+# masks against its own RGBD ring buffer. Set <= 0 to run every frame.
+publish_freq: 2.0
+
+debug: 0
+visualize: true
+
+sub_manager:
+  name: multi_rgbd
+  rgbd_channels:
+    # - upper_camera
+    # - side_camera
+    # - d455_1
+    - d455_2
+  max_sub_freq: 2000
+pub_manager:
+  name: mask
+  # one mask channel per view, aligned with rgbd_channels order. Defaults to
+  # "<rgbd_channel>_mask" if omitted; kept explicit here for clarity.
+  mask_channels:
+    # - upper_camera_mask
+    # - side_camera_mask
+    # - d455_1_mask
+    - d455_2_mask
+  max_pub_freq: 2000

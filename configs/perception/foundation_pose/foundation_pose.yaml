@@ -1,0 +1,48 @@
+# Configuration for FoundationPoseTracking perception module
+name: foundation_pose_tracking
+
+# object name in named_vec publisher
+object_name: "predefined_obj"
+mesh_file: "assets/object_mesh/ycb_006_mustard_bottle/textured_mesh.obj"
+
+# FoundationPose parameters
+est_refine_iter: 5
+track_refine_iter: 2
+
+# SAM related
+# sam_model_type: "vit_h"
+
+# Please download the SAM model and put them in perception/sam/checkpoints/
+# sam_ckpt: "sam_vit_h_4b8939.pth"
+# /home/justin/code/Manipulator-Software/perception/sam/checkpoints
+sam2:
+  config_file: "configs/sam2.1/sam2.1_hiera_l.yaml"
+  checkpoint: "third_party/sam2/checkpoints/sam2.1_hiera_large.pt"
+visualize_sam: true
+
+debug: 0
+debug_dir: debug_output
+visualize: True
+
+# Silence FoundationPose per-frame INFO log spam (raises root logger to WARNING).
+quiet_logs: true
+# Print aggregate tracking FPS every N frames (0 = never).
+fps_report_every: 30
+
+# Low pass filter for pose
+pose_filter:
+  use_filter: True
+  alpha: 0.7
+  window_size: 0
+  fix_x_rotation: false
+  fix_z_rotation: false
+
+sub_manager:
+  name: single_rgbd
+  rgbd_channel: d455_1
+  # rgbd_channel: upper_camera
+  max_sub_freq: 2000
+pub_manager:
+  name: named_vec
+  named_vec_list_channel: hw_obj_pose
+  max_pub_freq: 2000

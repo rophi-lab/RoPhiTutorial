@@ -1,0 +1,24 @@
+
+name: tapnet_click_and_track
+
+checkpoint_name: "causal_bootstapir_checkpoint.pt"
+
+# tapnet requires resizing images to 256x256
+resize_height: 256
+resize_width: 256
+update_freq: 30.0
+# use multiple points to increase tracking consistency
+use_multi_points: true
+num_sample_points: 10
+# sample box size in terms of pixels
+sample_box_size: 30
+# threshold for filtering out uncertain points
+uncertainty_threshold: 0.5
+sub_manager:
+  name: single_rgbd
+  rgbd_channel: d435i_1
+  max_sub_freq: 2000
+pub_manager:
+  name: point3d
+  point_channel: click_and_point
+  max_pub_freq: 2000

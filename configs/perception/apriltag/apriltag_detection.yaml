@@ -1,0 +1,34 @@
+# Configuration for AprilTag Detection perception module
+name: apriltag_detection
+
+# AprilTag detec parameters
+target_tag_id: 1 # ID of the AprilTag to detect
+tag_size: 0.11788   # Size of the AprilTag in meters
+
+
+# target_tag_id: 0
+# tag_size: 0.07325
+# Visualization settings
+visualize: True
+debug: True
+
+# Low pass filter for pose
+pose_filter:
+  use_filter: False
+  alpha: 0.1
+  window_size: 0
+
+# Object name in named_vec publisher
+object_name: "hw_apriltag"
+
+# Subscription settings
+sub_manager:
+  name: single_rgbd
+  rgbd_channel: d455_1
+  max_sub_freq: 2000
+
+# Publication settings
+pub_manager:
+  name: named_vec
+  named_vec_list_channel: hw_apriltag
+  max_pub_freq: 2000 

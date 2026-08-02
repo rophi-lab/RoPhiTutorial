@@ -18,6 +18,11 @@ def get_sim_platform(
     name = cfg_platform["name"]
     cfg = OmegaConf.merge(cfg_platform, cfg_sub_manager, cfg_pub_manager)
 
+    if name == "empty":
+        from robot_platform.sim.EmptySimPlatform import EmptySimPlatform
+
+        return EmptySimPlatform(**cfg)
+
     if name == "flexiv_arm_5f_hand":
         from robot_platform.sim.flexiv_arm_5F_hand.SimFlexivArm5FHand import (
             SimFlexivArm5FHand,

@@ -1,0 +1,140 @@
+
+name: realsense
+num_sensors: 1
+info_pub_freq: 30
+
+realsense:
+  d455_1:
+    serial: 031422250290
+    # serial: 242422304947
+    fixed: True
+    attached_body: "camera_link_2"
+    frequency: 30
+
+    width: 640
+    height: 480
+    fx: 381.33
+    fy: 381.33
+    cx: 319.235
+    cy: 237.902
+
+
+  #   # # p[633.623 370.788]  f[635.932 634.278]
+    # width: 1280
+    # height: 720
+    # fx: 635.932
+    # fy: 634.278
+    # cx: 633.623
+    # cy: 370.788
+
+  #   # fx: 386.39
+  #   # fy: 385.881
+  #   # cx: 323.793
+  #   # cy: 248.495
+  #   # depth factor for depth image.
+  #   # depth_value * depth_factor = real depth value
+    depth_factor: 1000
+  #   # in fixed mode, this will be the extrinsic transformation
+  #   # from the world frame to the camera frame
+    tf_link_to_cam:
+  #     # quaternion: [ 0.729626, -0.551748, 0.2045475, 0.3483969 ]  # quaternion [x,y,z,w]
+  #     # translation: [-0.32473762,  0.47469455, 0.48650678]
+
+  #     # 080625 results
+  #     # quaternion: [ 0.846699, 0.4467704, -0.1047043, 0.2693215 ]  # quaternion [x,y,z,w]
+  #     # # quaternion: [-0.08953541,  0.24040384,  0.9184891 ,  0.30094381]  # quaternion [x,y,z,w]
+  #     # translation: [0.54145117, 0.06037618, 1.07160948]
+
+
+  #     # 080825 new cam location (closer to window) with apriltag
+      # quaternion: [ 0.90631733, -0.26332043,  0.13481482,  0.30178837]
+      # translation: [-0.20982991, -0.64643041,  1.40064359]
+      # quaternion: [ 0.88779797, -0.23480157,  0.16959121,  0.35766158]
+      # translation: [-0.1323428, -0.42372016,  1.49342603]
+
+      # best result 13:39 8/11/25
+      # quaternion: [ 0.88779797 ,-0.23480157 , 0.16959121,  0.35766158]
+      # translation: [-0.15398581, -0.44983235 , 1.51570917]
+
+      # quaternion: [ 0.88784789, -0.23474292,  0.16914976,  0.35778521]
+      # translation: [-0.1536581, -0.44971794,  1.51509262]
+      # quaternion: [ 0.8877329250179667 ,  -0.2327110299087781 ,  0.16868004787902824 ,  0.3596148938035934 ]
+      # translation: [ -0.15161909993992312 ,  -0.446301893050279 ,  1.51392004102906 ]
+      # quaternion: [ 0.8885810063573318 ,  -0.228024256657706 ,  0.19155420304734416 ,  0.3489064642731473 ]
+      # translation: [ -0.1611009404618564 ,  -0.4415502881876769 ,  1.5225380465913987 ]
+      # quaternion: [ 0.88779797, -0.23480157 , 0.16959121 , 0.35766158]
+      # translation: [-0.15505569, -0.45110246,  1.5168237 ]
+      # translation: [-0.1323428, -0.39372016,  1.49342603]
+      # quaternion: [ 0.88779797,
+      # translation: [-0.1323428, -0.39372016,  1.49342603]
+
+
+      # quaternion: [ 0.8912887001773722 ,  -0.23045291446151314 ,  0.18047119208494822 ,  0.3463034160671282 ]
+      # translation: [ -0.15499965549131034 ,  -0.44845630572401995 ,  1.501707299644361 ]
+
+
+      # might also be good 14:37 8/11/25
+      # quaternion: [ 0.8877922361739565 ,  -0.23273520691109761 ,  0.16958730521843263 ,  0.35902564638482953 ]
+      # translation: [ -0.1514295298961861 ,  -0.44526612814716493 ,  1.5126906239393239 ]
+
+      # best 14:37 08/11/25 temp final
+      # quaternion: [ 0.8877922361739565 ,  -0.23273520691109761 ,  0.16958730521843263 ,  0.35902564638482953 ]
+      # translation: [ -0.15196454329949552 ,  -0.4458999979645689 ,  1.5132491664290804 ]
+
+      # quaternion: [ 0.888771437996648 ,  -0.23246103460392237 ,  0.17000510972278804 ,  0.35657462200833534 ]
+      # translation: [ -0.1565693333092073 ,  -0.44708484633686896 ,  1.515902472052464 ]
+
+
+      # quaternion: [ 0.8877922361739565 ,  -0.23273520691109761 ,  0.16958730521843263 ,  0.35902564638482953 ]
+      # translation: [ -0.15223205000115023 ,  -0.4462169328732709 ,  1.5135284376739588 ]
+      
+
+      #march 20 2026
+      # quaternion: [ 0.8898435331236279 ,  -0.23075908343195853 ,  0.16378471630123617 ,  0.35791521157646433 ]
+      # translation: [ -0.14333447747525646 ,  -0.4530468346886469 ,  1.5189961516782546 ]
+
+      #april 6 2026 
+      # quaternion: [ 0.017765235091432623 ,  0.8665542099559403 ,  -0.3986369675613796 ,  -0.2997611811480096 ]
+      # translation: [ -0.25056837214472544 ,  0.5006766595580819 ,  0.674098839228585 ]
+
+      # april 28 2026 - cam extrinsics with easyhec
+      # quaternion: [ 0.00168808,  0.86202312, -0.40650041, -0.30277171]
+      # translation: [-0.2575864 ,  0.49823084,  0.66178197]
+
+      # july 14 2026 - cam extrinsics with easyhec, for flexiv
+      quaternion: [0.62199457, 0.60300023, -0.49432557, 0.07180320]
+      translation: [0.18823174, -0.31501439, 1.28306019]
+      
+  # d435i_1: 
+  #   serial: 941322070969
+  #   fixed: True
+  #   attached_body: "world"
+  #   width: 640
+  #   height: 480
+  #   frequency: 30
+  #   fx: 614.429
+  #   fy: 615.125
+  #   cx: 323.473
+  #   cy: 239.058
+  #   # depth factor for depth image.
+  #   # depth_value * depth_factor = real depth value
+  #   depth_factor: 1000  
+  #   # in fixed mode, this will be the extrinsic transformation
+  #   # from the world frame to the camera frame
+  #   tf_link_to_cam:
+  #     quaternion: [0, 0, 0, 1]  # quaternion [x,y,z,w]
+  #     translation: [0, 0, 0]
+
+pub_manager:
+  name: realsense
+  realsense:
+    d455_1_channel: d455_1
+    # d435i_1_channel: d435i_1
+  max_pub_freq: 100
+
+sub_manager:
+  name: base
+  realsense:
+    d455_1_channel: d455_1
+  #   # d435i_1_channel: d435i_1
+  max_sub_freq: 100

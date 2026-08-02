@@ -1,0 +1,14 @@
+
+name: click_two_and_points
+# visualization_for_debug: True
+
+
+sub_manager:
+  name: single_rgbd
+  rgbd_channel: d455_1
+  # rgbd_channel: upper_camera
+  max_sub_freq: 2000
+pub_manager:
+  name: named_vec
+  named_vec_list_channel: click_and_point
+  max_pub_freq: 2000

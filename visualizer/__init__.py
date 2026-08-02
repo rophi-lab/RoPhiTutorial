@@ -25,5 +25,11 @@ def get_vis_manager(cfg_vis_manager: DictConfig) -> BaseVisManager:
         )
 
         return MjEvalGraspVisManager(cfg_vis_manager)
+    elif cfg_vis_manager["name"] == "obj_pose":
+        from visualizer.vis_manager.perception_tutorial.ObjPoseVisManager import (
+            ObjPoseVisManager,
+        )
+
+        return ObjPoseVisManager(cfg_vis_manager)
     else:
         raise ValueError(f"Visualizer manager {cfg_vis_manager['name']} not found.")

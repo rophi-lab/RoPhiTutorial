@@ -1,6 +1,9 @@
 from omegaconf import DictConfig
 
-from communication.lcm.subscriber.BaseSubManager import BaseSubManager
+from communication.lcm.subscriber.BaseSubManager import (
+    BaseEnvSubManeager,
+    BaseSubManager,
+)
 
 
 def get_env_sub_manager(cfg_sub_manager: DictConfig) -> BaseSubManager:
@@ -11,7 +14,7 @@ def get_env_sub_manager(cfg_sub_manager: DictConfig) -> BaseSubManager:
     name = cfg_sub_manager["name"]
 
     if name == "base":
-        return BaseSubManager(**cfg_sub_manager)
+        return BaseEnvSubManeager(**cfg_sub_manager)
     elif name == "joint":
         from communication.lcm.subscriber.sub_manager.env.JointSubManager import (
             JointSubManager,

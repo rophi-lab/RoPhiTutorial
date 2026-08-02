@@ -1,0 +1,62 @@
+
+name: realsense
+num_sensors: 2
+info_pub_freq: 30
+
+realsense:
+  d455_1:
+    serial: 242422304947
+    fixed: True
+    attached_body: "camera_link_2"
+    width: 640
+    height: 480
+    frequency: 30
+    fx: 386.495
+    fy: 385.986
+    cx: 323.793
+    cy: 248.495
+    # D400 depth visual preset (name-matched against the SDK's presets).
+    visual_preset: Default
+    # visual_preset: High Accuracy
+    # visual_preset: High Density
+    # depth factor for depth image.
+    # depth_value * depth_factor = real depth value
+    depth_factor: 1000
+    # in fixed mode, this will be the extrinsic transformation
+    # from the world frame to the camera frame
+    tf_link_to_cam:
+      quaternion: [0.70717125, 0.00632024, -0.01983920, 0.70673565]
+      translation: [-0.68469989, 0.19462235, 0.63892776]
+  d455_2:
+    serial: 031422250290
+    fixed: True
+    attached_body: "camera_link_2"
+    width: 640
+    height: 480
+    frequency: 30
+    fx: 381.352
+    fy: 380.36
+    cx: 316.174
+    cy: 246.473
+    # D400 depth visual preset (name-matched against the SDK's presets).
+    visual_preset: Default
+    # visual_preset: High Accuracy
+    # visual_preset: High Density
+    # depth factor for depth image.
+    # depth_value * depth_factor = real depth value
+    depth_factor: 1000
+    # in fixed mode, this will be the extrinsic transformation
+    # from the world frame to the camera frame
+    tf_link_to_cam:
+      quaternion: [0.44407333, 0.68072302, -0.51123615, 0.27937904]
+      translation: [0.19770595, -0.09172991, 1.26230240]
+
+pub_manager:
+  name: realsense
+  realsense:
+    d455_1_channel: d455_1
+    d455_2_channel: d455_2
+  max_pub_freq: 100
+
+sub_manager:
+  name: base

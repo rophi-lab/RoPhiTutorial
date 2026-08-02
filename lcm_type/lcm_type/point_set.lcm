@@ -1,0 +1,11 @@
+package geometry;
+
+
+
+struct point_set_t
+{   
+    // Points in R^3
+    float timestamp;
+    int32_t num_points; 
+    float position[num_points][3];
+}

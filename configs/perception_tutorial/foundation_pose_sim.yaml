@@ -1,0 +1,48 @@
+# FoundationPose + SAM2 tracking on the table_mesh_cam sim RGBD stream.
+name: foundation_pose_tracking_sam2
+
+object_name: "predefined_obj"
+mesh_file: assets/object_mesh/ycb_006_mustard_bottle/textured_mesh.obj
+
+est_refine_iter: 1
+track_refine_iter: 2
+
+# Leave null to draw ROI interactively on first frame (or click object directly).
+scene_roi: null
+
+sam2:
+  config_file: "configs/sam2.1/sam2.1_hiera_t.yaml"
+  hf_repo: "facebook/sam2.1-hiera-tiny"
+  hf_filename: "sam2.1_hiera_tiny.pt"
+  mask_rgb: false
+  mask_depth: false
+  obj_id: 1
+
+auto_reset:
+  enable: true
+  score_threshold: 100.0
+  streak: 3
+
+visualize_sam: true
+debug: 0
+debug_dir: debug_output
+visualize: true
+
+quiet_logs: true
+fps_report_every: 30
+
+pose_filter:
+  use_filter: false
+  alpha: 0.7
+  window_size: 0
+  fix_x_rotation: false
+  fix_z_rotation: false
+
+sub_manager:
+  name: single_rgbd
+  rgbd_channel: upper_camera
+  max_sub_freq: 2000
+pub_manager:
+  name: named_vec
+  named_vec_list_channel: fp_obj_pose
+  max_pub_freq: 2000

@@ -1,0 +1,13 @@
+package geometry;
+
+
+
+struct point_3d_traj_t
+{
+    // Points Traj. in R^3
+    float timestamp;
+    int32_t num_times;
+    float t_discrete[num_times];
+    float point_3d_traj_des[num_times][3];
+    float v_traj_des[num_times][3];
+}

@@ -1,0 +1,51 @@
+name: table_mesh_cam
+scene_xml_path: assets/scene/perception_tutorial/table_mesh_cam.xml
+env_mode: sim_real_time
+vis_mode: vis_on
+
+sim_freq: 500
+view_freq: 30
+
+# Object
+obj_path: assets/object_mesh/ycb_006_mustard_bottle
+mesh_name: predefined_obj
+object_name: predefined_obj
+object_density: 500
+texture_img_size: [512, 512]
+obj_mesh2init_quat: [1.0, 0.0, 0.0, 0.0]
+table_height: 0.42
+obj_xy: [0.0, 0.0]
+spin_on_start: false
+spin_yaw_rate: 0.4
+obj_pose_pub_freq: 30
+
+viewer_cam:
+  distance: 1.4
+  elevation: -35
+  azimuth: 140
+  lookat: [0.0, 0.0, 0.45]
+
+sensor:
+  extrinsic:
+    upper_camera:
+      width: 640
+      height: 480
+      rgb_enable: True
+      depth_enable: True
+      frequency: 15
+      fixed: True
+      attached_body: world
+      depth_factor: 1.0
+
+platform:
+  name: empty
+
+sub_manager:
+  name: base
+  max_sub_freq: 2000
+
+pub_manager:
+  name: cam_only
+  upper_camera_channel: upper_camera
+  named_vec_list_channel: sim_obj_pose_bb2world
+  max_pub_freq: 2000

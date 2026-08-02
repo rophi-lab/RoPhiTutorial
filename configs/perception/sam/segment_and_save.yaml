@@ -1,0 +1,27 @@
+# Configuration for FoundationPoseTracking perception module
+name: sam_segment_and_save
+
+
+
+# SAM related
+sam_model_type: "vit_h"
+
+# Please download the SAM model and put them in perception/sam/checkpoints/
+sam_ckpt: "sam_vit_h_4b8939.pth"
+# sam_ckpt: "sam_vit_b_01ec64.pth"
+# /home/justin/code/Manipulator-Software/perception/sam/checkpoints
+
+save_results: True
+save_dir: "/home/justin/code/Manipulator-Software/data/object_mesh/blue_bowl"
+
+visualize_sam: True
+visualize: True
+
+sub_manager:
+  name: single_rgbd
+  rgbd_channel: d455_1
+  max_sub_freq: 2000
+pub_manager:
+  name: point3d
+  point_channel: no_publisher_for_this_one
+  max_pub_freq: 2000

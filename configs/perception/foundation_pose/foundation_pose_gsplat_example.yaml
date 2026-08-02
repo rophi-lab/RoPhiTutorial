@@ -1,0 +1,44 @@
+# Example configuration for FoundationPoseTracking using a Gaussian-Splat object
+# model (gsplat/2DGS) instead of a textured mesh. See foundation_pose.yaml for the
+# mesh-backed equivalent; splat_file and mesh_file are mutually exclusive.
+name: foundation_pose_tracking
+
+# object name in named_vec publisher
+object_name: "predefined_obj"
+splat_file: "assets/object_mesh/tomato_soup_can/gaussians.pt"
+
+# FoundationPose parameters
+est_refine_iter: 5
+track_refine_iter: 2
+
+sam2:
+  config_file: "configs/sam2.1/sam2.1_hiera_l.yaml"
+  checkpoint: "third_party/sam2/checkpoints/sam2.1_hiera_large.pt"
+visualize_sam: true
+
+debug: 0
+debug_dir: debug_output
+visualize: True
+
+# Silence FoundationPose per-frame INFO log spam (raises root logger to WARNING).
+quiet_logs: true
+# Print aggregate tracking FPS every N frames (0 = never).
+fps_report_every: 30
+
+# Low pass filter for pose
+pose_filter:
+  use_filter: True
+  alpha: 0.7
+  window_size: 0
+  fix_x_rotation: false
+  fix_z_rotation: false
+
+sub_manager:
+  name: single_rgbd
+  # rgbd_channel: upper_camera
+  rgbd_channel: d455_1
+  max_sub_freq: 2000
+pub_manager:
+  name: named_vec
+  named_vec_list_channel: hw_obj_pose
+  max_pub_freq: 2000

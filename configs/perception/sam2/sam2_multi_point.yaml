@@ -1,0 +1,46 @@
+# Configuration for SAM2 Multi-Point Segmentation
+name: "sam2_multi_point_segmentation"
+
+# Update frequency
+update_freq: 10.0
+
+# SAM2 configuration
+sam2_ckpt: "sam2.1_hiera_large.pt"
+sam2_config_path: "configs/perception/sam2/sam2.1_hiera_l.yaml"
+
+# Point cloud processing
+pcd_stat_outlier_removal:
+  enable: true
+  nb_neighbors: 20
+  std_ratio: 1.5
+
+pcd_radius_outlier_removal:
+  enable: true
+  radius: 0.2
+
+# Bounding box fitting method: "oriented" or "minimal"
+bbox_method: "oriented"
+
+# Visualization options
+visualize_masks: true
+visualize_bboxes: true
+visualize_every_point_cloud: true
+visualize_all_point_clouds: false
+visualize_pcd_outliers: true
+save_results: false
+save_dir: "debug_output/sam2_segmentation"
+
+# Image processing
+resize_height: 256
+resize_width: 256
+
+# Subscriber configuration
+sub_manager:
+  name: "single_rgbd"
+  rgbd_channel: "d435i_1"
+
+# Publisher configuration
+pub_manager:
+  name: "point3d"
+  point_channel: "sam2_segmentation_points"
+  bbox_channel: "sam2_segmentation_bboxes" 

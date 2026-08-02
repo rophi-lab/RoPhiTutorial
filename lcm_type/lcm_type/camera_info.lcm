@@ -1,0 +1,20 @@
+package vision;
+
+struct camera_info_t
+{   
+    int32_t height;
+    int32_t width;
+
+    float timestamp;
+    float fx;
+    float fy;
+    float cx;
+    float cy;
+
+    float extrinsic[12]; 
+
+    float depth_factor;
+
+    boolean fixed;
+    string attached_body;   // the body name the camera is attached to.
+}

@@ -1,0 +1,20 @@
+
+name: molmo_pointing
+visualization_for_debug: True
+
+model_name: allenai/Molmo-7B-D-0924
+torch_dtype: float16  # torch type for controlling memory usage
+# device map for huggingface transformers
+# device_map: "auto" will automatically select the device map based on the available GPUs and CPUs
+device_map: "auto"
+preload_model: True
+update_only_new_cmd: True
+
+sub_manager:
+  name: single_rgbd
+  rgbd_channel: d435i_1
+  max_sub_freq: 2000
+pub_manager:
+  name: point3d
+  point_channel: molmo_point
+  max_pub_freq: 2000

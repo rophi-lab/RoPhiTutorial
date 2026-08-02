@@ -1,0 +1,104 @@
+# Example configuration for FoundationPoseMaskNode using a Gaussian-Splat object
+# model (gsplat/2DGS) instead of a textured mesh. See foundation_pose_mask_node.yaml
+# for the mesh-backed equivalent; splat_file and mesh_file are mutually exclusive.
+name: foundation_pose_mask_node
+
+object_name: "predefined_obj"
+# splat_file: "assets/object_mesh/0715_tomato_soup_can/gaussians.pt"
+# splat_file: "assets/object_mesh/0723_mouse_box/gaussians.pt"
+# splat_file: "assets/object_mesh/0717_toy_pumpkin/gaussians.pt"
+# splat_file: "assets/object_mesh/0717_tissue_box/gaussians.pt"
+# splat_file: "assets/object_mesh/0720_mustard_bottle/gaussians.pt"
+# splat_file: "assets/object_mesh/0721_banana/gaussians.pt"
+splat_file: "assets/object_mesh/0724_pringles/gaussians.pt"
+
+est_refine_iter: 2
+track_refine_iter: 1
+
+# Crop padding around the object in the refine/score render window. Crop radius
+# = mesh_diameter * crop_ratio / 2, so larger = more margin (object appears
+# smaller in the crop). Released FoundationPose weights train at 1.2; keep this
+# modest (≈1.4-1.6) -- pushing far shrinks the object in the fixed input window
+# and can degrade pose accuracy. Comment out to use the model default (1.2).
+crop_ratio: 1.2
+
+# Register pose-hypothesis grid: ~register_min_n_views icosphere viewpoints x
+# (360/register_inplane_step) in-plane rotations, symmetry-clustered. Defaults
+# 40 / 60 reproduce stock FoundationPose (~252 hypos). Lower views / coarser
+# step => faster register, at some risk of missing the true initial orientation
+# (a symmetric object tolerates fewer; try 20 / 90).
+# register_min_n_views: 42
+register_min_n_views: 12
+# register_inplane_step: 60
+register_inplane_step: 90
+
+# ROI applied to rgb/depth/mask in this node (the SAM2 node runs full-frame).
+# null + interactive_roi:true -> draw an ROI per view on the first frame.
+# null + interactive_roi:false -> use the full frame.
+# "x,y,w,h" -> fixed crop, no prompt.
+scene_roi: null
+interactive_roi: true
+
+# Ring buffer of recent (timestamp, rgb_crop, depth_crop) per view, and how close
+# a buffered frame must be (seconds) to a mask's timestamp to be used for
+# registration.
+rgbd_buffer_size: 60
+mask_match_tolerance: 0.2
+
+# SAM2 block is read by the shared base __init__ but no predictor is built here
+# (this node consumes masks over LCM). Kept minimal to satisfy config lookups.
+sam2:
+  config_file: "configs/sam2.1/sam2.1_hiera_t.yaml"
+  obj_id: 1
+
+multiview:
+  score_direction: min
+  lost_threshold: 135
+  # lost_threshold: 150
+  lost_side: above
+  resync_margin: 0.0
+  resync_enable: true
+
+auto_reset:
+  enable: true
+  streak: 5
+
+visualize_sam: false
+# debug>=2 also dumps register-time files (color/depth/point clouds + vis_*.png)
+# to debug_dir and slows registration. The live overlay below does NOT need it
+# (it bumps debug per track_one call internally), so you can set this back to 0.
+debug: 0
+debug_dir: debug_output
+visualize: true
+# Live per-frame render overlay: opens a "[render]" window per view showing the
+# rendered gsplat model (left) beside the observed crop (right), plus depth
+# panels. Costs an extra refiner render each frame -> turn off for production.
+visualize_render: false
+quiet_logs: true
+fps_report_every: 30
+profile_stages: true
+
+pose_filter:
+  use_filter: false
+  alpha: 0.9
+  window_size: 0
+  fix_x_rotation: false
+  fix_z_rotation: false
+
+sub_manager:
+  name: multi_rgbd_mask
+  rgbd_channels:
+    # - upper_camera
+    # - side_camera
+    # - d455_1
+    - d455_2
+  mask_channels:
+    # - upper_camera_mask
+    # - side_camera_mask
+    # - d455_1_mask
+    - d455_2_mask
+  max_sub_freq: 100
+pub_manager:
+  name: named_vec
+  named_vec_list_channel: hw_obj_pose
+  max_pub_freq: 2000

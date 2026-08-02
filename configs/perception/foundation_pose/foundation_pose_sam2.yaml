@@ -1,0 +1,56 @@
+# FoundationPoseTrackingSAM2: FoundationPose + streaming SAM2 mask refinement
+name: foundation_pose_tracking_sam2
+
+object_name: "predefined_obj"
+mesh_file: assets/object_mesh/ycb_006_mustard_bottle/textured_mesh.obj
+
+est_refine_iter: 1
+track_refine_iter: 2
+
+# Scene ROI: "x,y,w,h" crop applied to every RGBD frame (in full-image pixels)
+# before feeding the models. Leave null to draw it interactively on first frame.
+scene_roi: null
+
+# Streaming SAM2 (segment-anything-2-real-time fork). Checkpoint is fetched
+# from HuggingFace on first run (cached under ~/.cache/huggingface).
+sam2:
+  config_file: "configs/sam2.1/sam2.1_hiera_t.yaml"
+  hf_repo: "facebook/sam2.1-hiera-tiny"
+  hf_filename: "sam2.1_hiera_tiny.pt"
+  # Zero out RGB/depth outside the mask before feeding the tracker.
+  mask_rgb: false
+  mask_depth: false
+  obj_id: 1
+
+# Auto re-register when masked observations drift from the posed mesh.
+auto_reset:
+  enable: true
+  score_threshold: 100.0 # FoundationPose tracking score above this => lost
+  streak: 3              # consecutive lost frames before re-register
+
+visualize_sam: true
+debug: 0
+debug_dir: debug_output
+visualize: true
+
+# Silence FoundationPose / SAM2 per-frame INFO log spam (raises root to WARNING).
+quiet_logs: true
+# Print aggregate tracking FPS (+ latest score) every N frames (0 = never).
+fps_report_every: 30
+
+pose_filter:
+  use_filter: false
+  alpha: 0.7
+  window_size: 0
+  fix_x_rotation: false
+  fix_z_rotation: false
+
+sub_manager:
+  name: single_rgbd
+  # rgbd_channel: d455_1
+  rgbd_channel: upper_camera
+  max_sub_freq: 2000
+pub_manager:
+  name: named_vec
+  named_vec_list_channel: hw_obj_pose
+  max_pub_freq: 2000

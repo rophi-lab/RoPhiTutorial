@@ -77,16 +77,12 @@ class HardwareFlexivArm5FHand(BaseHardwarePlatform):
         self._hand_default_q = np.array(
             hand_cfg.get("default_q", np.zeros(_NUM_HAND_JOINTS))
         )
-        self._hand_hold_kp = np.array(
-            hand_cfg.get("hold_kp", [0.3] * _NUM_HAND_JOINTS)
-        )
+        self._hand_hold_kp = np.array(hand_cfg.get("hold_kp", [0.3] * _NUM_HAND_JOINTS))
         self._hand_hold_kd = np.array(
             hand_cfg.get("hold_kd", [0.03] * _NUM_HAND_JOINTS)
         )
         self._hand_joint_state = JointMeasData(num_joints=_NUM_HAND_JOINTS)
-        self._hand_joint_meas_channel = config["pub_manager"][
-            "hand_joint_meas_channel"
-        ]
+        self._hand_joint_meas_channel = config["pub_manager"]["hand_joint_meas_channel"]
 
         # ---------------- Command bookkeeping ----------------
         self._last_ctrl_data = JointCtrlData(num_joints=_NUM_JOINTS)
@@ -245,8 +241,8 @@ class HardwareFlexivArm5FHand(BaseHardwarePlatform):
     def _spawn_bridge(self) -> None:
         env = os.environ.copy()
         existing = env.get("LD_LIBRARY_PATH", "")
-        env["LD_LIBRARY_PATH"] = (
-            self._bridge_ld_lib_path + (":" + existing if existing else "")
+        env["LD_LIBRARY_PATH"] = self._bridge_ld_lib_path + (
+            ":" + existing if existing else ""
         )
         self._bridge_proc = subprocess.Popen(
             [self._bridge_binary, self._bridge_config],

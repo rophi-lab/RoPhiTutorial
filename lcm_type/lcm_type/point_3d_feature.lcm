@@ -1,0 +1,15 @@
+package geometry;
+
+struct point_3d_feature_t
+{
+    float timestamp;
+    int32_t num_points;
+    float position[num_points][3];
+    
+    int32_t num_feature_types;
+    string concat_feature_names; // parsed with ","
+    int32_t feature_dims[num_feature_types];
+    
+    int32_t concat_feature_dim;
+    float concat_feature[num_points][concat_feature_dim];
+}
